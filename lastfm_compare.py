@@ -391,35 +391,42 @@ for album_info in album_tracks_map.values():
             'playcount': album_info['playcount']
         })
 
-# 3. New songs: Recent singles and tracks not part of albums
+# 3. New songs: Only very recent singles, heavily filtered to avoid old popular tracks
 new_songs = []
 for track in all_missing_tracks:
     if track['type'] in ['single', 'recent_single']:
-        # Include ALL singles and recent singles
-        # Since Last.fm doesn't provide reliable release dates for singles,
-        # we assume tracks from the "recent tracks" API are newer, and use playcount as a proxy
         is_recent = track['type'] == 'recent_single'
         playcount = track['playcount']
         
-        # Prioritize tracks that are either:
-        # 1. From recent tracks API (likely newer)
-        # 2. Have moderate to high playcount (popular recent releases)
-        if is_recent or playcount >= 1000:
+        # Be much more restrictive to avoid old popular songs showing up as "new"
+        # Only include tracks if they meet strict criteria for being recent:
+        if is_recent:
+            # Always include tracks from recent tracks API (most likely to be new)
             new_songs.append({
                 'artist': track['artist'],
                 'track': track['track'],
                 'playcount': playcount,
-                'source': 'recent' if is_recent else 'popular'
+                'source': 'recent'
+            })
+        elif playcount >= 50000:
+            # For regular singles, only include if they have very high playcount
+            # (indicating a major recent release that's gaining massive traction)
+            # This helps avoid old popular songs while catching new viral hits
+            new_songs.append({
+                'artist': track['artist'],
+                'track': track['track'],
+                'playcount': playcount,
+                'source': 'viral'
             })
 
 # Sort results
 missing_tracks = sorted(missing_tracks, key=lambda x: x['artist'])  # NO LIMIT
 new_albums = sorted(new_albums, key=lambda x: x['playcount'], reverse=True)
-# Sort new songs: recent tracks first, then by playcount
+# Sort new songs: recent tracks first, then viral hits by playcount
 new_songs = sorted(new_songs, key=lambda x: (x['source'] != 'recent', -x['playcount']))
 
 print(f"Final results: {len(missing_tracks)} missing tracks, {len(new_albums)} new albums, {len(new_songs)} new songs", file=sys.stderr)
-print(f"New albums are filtered from missing tracks (6 months), new songs include all recent singles and popular singles", file=sys.stderr)
+print(f"New albums are filtered from missing tracks (6 months), new songs are heavily filtered recent/viral singles only", file=sys.stderr)
 
 result = {
     'missing_tracks': missing_tracks,
