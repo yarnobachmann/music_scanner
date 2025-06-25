@@ -86,30 +86,15 @@ Function .onInstSuccess
   
   ; Create desktop shortcut if requested
   ${If} $CreateDesktopShortcut == ${BST_CHECKED}
-    ; Try multiple icon locations for desktop shortcut
-    IfFileExists "$INSTDIR\icon.ico" 0 try_exe_icon
-      CreateShortcut "$DESKTOP\Music Scan Pro.lnk" "$0" "" "$INSTDIR\icon.ico" 0 SW_SHOWNORMAL
-      DetailPrint "Created desktop shortcut with ico file"
-      Goto desktop_done
-    try_exe_icon:
-      ; Use the executable's embedded icon as fallback
-      CreateShortcut "$DESKTOP\Music Scan Pro.lnk" "$0" "" "$0" 0 SW_SHOWNORMAL
-      DetailPrint "Created desktop shortcut with exe icon"
-    desktop_done:
+    CreateShortcut "$DESKTOP\Music Scan Pro.lnk" "$INSTDIR\Music Scan Pro.exe"
+    DetailPrint "Created desktop shortcut with exe icon"
   ${EndIf}
   
   ; Create start menu shortcuts if requested
   ${If} $CreateStartMenuShortcut == ${BST_CHECKED}
     CreateDirectory "$SMPROGRAMS\Music Scan Pro"
-    IfFileExists "$INSTDIR\icon.ico" 0 startmenu_try_exe
-      CreateShortcut "$SMPROGRAMS\Music Scan Pro\Music Scan Pro.lnk" "$0" "" "$INSTDIR\icon.ico" 0 SW_SHOWNORMAL
-      DetailPrint "Created start menu shortcut with ico file"
-      Goto startmenu_done
-    startmenu_try_exe:
-      ; Use the executable's embedded icon as fallback
-      CreateShortcut "$SMPROGRAMS\Music Scan Pro\Music Scan Pro.lnk" "$0" "" "$0" 0 SW_SHOWNORMAL
-      DetailPrint "Created start menu shortcut with exe icon"
-    startmenu_done:
+    CreateShortcut "$SMPROGRAMS\Music Scan Pro\Music Scan Pro.lnk" "$INSTDIR\Music Scan Pro.exe"
+    DetailPrint "Created start menu shortcut with exe icon"
   ${EndIf}
   
   ; Refresh shell to update shortcuts
