@@ -1,6 +1,6 @@
 {
   "name": "music-scan-pro",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "A native desktop music collection analyzer using Last.fm",
   "main": "main.js",
   "scripts": {
