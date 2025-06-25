@@ -116,16 +116,6 @@ Expected filename format: `Artist - Album - Title.mp3`
 
 ## ⚙️ Configuration
 
-### Environment Variables
-
-Create a `.env.local` file for custom configuration:
-
-```env
-# Optional: Set default Last.fm API credentials
-LASTFM_API_KEY=your_api_key_here
-LASTFM_SECRET=your_secret_here
-```
-
 ### Settings Storage
 
 User settings are stored in:
