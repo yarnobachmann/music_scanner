@@ -14,6 +14,8 @@
     "pack": "electron-builder",
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && npm run create-banner && electron-builder --win --publish never",
+    "pack:win": "npm run build && electron-packager . \"Music Scan Pro\" --platform=win32 --arch=x64 --out=dist-packager --icon=bin/icon-256.ico --overwrite",
+    "dist:win-hybrid": "npm run pack:win && npm run create-banner && electron-builder --win --publish never --prepackaged=\"dist-packager/Music Scan Pro-win32-x64\"",
     "clean": "rimraf dist out",
     "create-ico-safe": "npm run create-ico || echo \"Warning: ICO creation failed, using existing icon\"",
     "create-ico": "node build/create-ico-from-custom.js",
@@ -51,9 +53,11 @@
     "electron": "^27.0.0",
     "electron-builder": "^24.6.4",
     "electron-icon-maker": "^0.0.5",
+    "electron-packager": "^17.1.2",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.3.4",
     "postcss": "^8.4.31",
+    "rcedit": "^4.0.1",
     "sharp": "^0.34.2",
     "tailwindcss": "^3.3.5",
     "to-ico": "^1.1.5",
@@ -61,7 +65,10 @@
     "wait-on": "^7.2.0"
   },
   "dependencies": {
+    "canvg": "^4.0.3",
+    "dompurify": "^3.2.6",
     "fuse.js": "^7.0.0",
+    "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.292.0",
@@ -74,7 +81,7 @@
     "productName": "Music Scan Pro",
     "copyright": "Copyright © 2025 Music Scan Pro",
     "compression": "normal",
-    "icon": "build/icon.ico",
+    "icon": "bin/icon-256.png",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -86,6 +93,7 @@
       "*.py",
       "icon.png",
       "build/icon.ico",
+      "bin/icon-256.ico",
       "package.json",
       "node_modules/**/*"
     ],
@@ -116,11 +124,13 @@
           ]
         }
       ],
-      "icon": "build/icon.ico",
+      "icon": "bin/icon-256.png",
       "publisherName": "Music Scan Pro",
       "verifyUpdateCodeSignature": false,
       "signAndEditExecutable": false,
-      "signDlls": false
+      "signDlls": false,
+      "requestedExecutionLevel": "asInvoker",
+      "forceCodeSigning": false
     },
     "nsis": {
       "oneClick": false,

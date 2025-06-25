@@ -87,7 +87,7 @@ jobs:
       shell: cmd
 
     - name: Build application
-      run: npm run dist:win
+      run: npm run dist:win-hybrid
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
