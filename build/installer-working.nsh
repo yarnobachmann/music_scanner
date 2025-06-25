@@ -17,19 +17,10 @@ Page custom ShortcutOptionsPage ShortcutOptionsPageLeave
 ; Install banner and icon assets
 Section -InstallAssets
   ; Copy the icon file to installation directory for shortcuts
-  IfFileExists "${BUILD_RESOURCES_DIR}\icon.ico" 0 try_app_ico
+  IfFileExists "${BUILD_RESOURCES_DIR}\icon.ico" 0 skip_icon_copy
     File "/oname=$INSTDIR\icon.ico" "${BUILD_RESOURCES_DIR}\icon.ico"
     DetailPrint "Installing custom icon from build resources..."
-    Goto icon_done
-  try_app_ico:
-  ; Try to copy icon from app directory if build resources don't have it
-  IfFileExists "$INSTDIR\build\icon.ico" 0 skip_icon_copy
-    CopyFiles "$INSTDIR\build\icon.ico" "$INSTDIR\icon.ico"
-    DetailPrint "Installing custom icon from app..."
-    Goto icon_done
   skip_icon_copy:
-    DetailPrint "No custom icon found, using executable icon"
-  icon_done:
   
   ; Copy PNG icon as well for runtime
   IfFileExists "$INSTDIR\icon.png" 0 skip_png_copy
