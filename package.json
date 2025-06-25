@@ -169,7 +169,8 @@
         }
       ],
       "category": "Audio",
-      "maintainer": "Music Scan Pro <contact@musicscanpro.com>"
+      "maintainer": "Music Scan Pro <contact@musicscanpro.com>",
+      "icon": "icon.png"
     },
     "dmg": {
       "title": "Music Scan Pro",
