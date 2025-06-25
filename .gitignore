@@ -48,7 +48,7 @@ __pycache__/
 *.tsbuildinfo
 
 # Generated icon files (keep source scripts)
-build/icon.ico
-build/icon.icns
-build/background.png
-build/installer-banner.bmp 
+!build/icon.ico
+!build/icon.icns
+!build/background.png
+!build/installer-banner.bmp 
