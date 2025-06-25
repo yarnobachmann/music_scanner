@@ -78,6 +78,14 @@ jobs:
     - name: Install Node.js dependencies
       run: npm ci
 
+    - name: Debug - List files
+      run: |
+        echo "Current directory:"
+        dir
+        echo "Build directory:"
+        dir build
+      shell: cmd
+
     - name: Build application
       run: npm run dist:win
       env:
@@ -161,6 +169,13 @@ jobs:
 
     - name: Install Node.js dependencies
       run: npm ci
+
+    - name: Debug - List files
+      run: |
+        echo "Current directory:"
+        ls -la
+        echo "Build directory:"
+        ls -la build/
 
     - name: Build Electron app
       run: npm run dist:linux

@@ -4,6 +4,11 @@ import requests
 import time
 from collections import defaultdict
 from difflib import SequenceMatcher
+import io
+
+# Configure stdout to handle Unicode properly on Windows
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Last.fm API - much faster than MusicBrainz
 LASTFM_API_KEY = '8de1b85b41034d5ab4e2cdcea5f39195'  # Default API key
