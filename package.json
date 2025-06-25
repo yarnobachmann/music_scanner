@@ -19,7 +19,8 @@
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:linux": "npm run build && electron-builder --linux",
     "postinstall": "electron-builder install-app-deps",
-    "test:build": "node scripts/build-test.js"
+    "test:build": "node scripts/build-test.js",
+    "release": "node scripts/release.js"
   },
   "keywords": [
     "music",
