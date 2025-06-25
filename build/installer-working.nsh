@@ -17,10 +17,19 @@ Page custom ShortcutOptionsPage ShortcutOptionsPageLeave
 ; Install banner and icon assets
 Section -InstallAssets
   ; Copy the icon file to installation directory for shortcuts
-  IfFileExists "${BUILD_RESOURCES_DIR}\icon.ico" 0 skip_icon_copy
+  IfFileExists "${BUILD_RESOURCES_DIR}\icon.ico" 0 try_app_ico
     File "/oname=$INSTDIR\icon.ico" "${BUILD_RESOURCES_DIR}\icon.ico"
-    DetailPrint "Installing custom icon..."
+    DetailPrint "Installing custom icon from build resources..."
+    Goto icon_done
+  try_app_ico:
+  ; Try to copy icon from app directory if build resources don't have it
+  IfFileExists "$INSTDIR\build\icon.ico" 0 skip_icon_copy
+    CopyFiles "$INSTDIR\build\icon.ico" "$INSTDIR\icon.ico"
+    DetailPrint "Installing custom icon from app..."
+    Goto icon_done
   skip_icon_copy:
+    DetailPrint "No custom icon found, using executable icon"
+  icon_done:
   
   ; Copy PNG icon as well for runtime
   IfFileExists "$INSTDIR\icon.png" 0 skip_png_copy
@@ -85,22 +94,29 @@ Function .onInstSuccess
   
   ; Create desktop shortcut if requested
   ${If} $CreateDesktopShortcut == ${BST_CHECKED}
-    IfFileExists "$INSTDIR\icon.ico" 0 desktop_no_icon
+    ; Try multiple icon locations for desktop shortcut
+    IfFileExists "$INSTDIR\icon.ico" 0 try_exe_icon
       CreateShortcut "$DESKTOP\Music Scan Pro.lnk" "$0" "" "$INSTDIR\icon.ico" 0 SW_SHOWNORMAL
+      DetailPrint "Created desktop shortcut with ico file"
       Goto desktop_done
-    desktop_no_icon:
-      CreateShortcut "$DESKTOP\Music Scan Pro.lnk" "$0" "" "" 0 SW_SHOWNORMAL
+    try_exe_icon:
+      ; Use the executable's embedded icon as fallback
+      CreateShortcut "$DESKTOP\Music Scan Pro.lnk" "$0" "" "$0" 0 SW_SHOWNORMAL
+      DetailPrint "Created desktop shortcut with exe icon"
     desktop_done:
   ${EndIf}
   
   ; Create start menu shortcuts if requested
   ${If} $CreateStartMenuShortcut == ${BST_CHECKED}
     CreateDirectory "$SMPROGRAMS\Music Scan Pro"
-    IfFileExists "$INSTDIR\icon.ico" 0 startmenu_no_icon
+    IfFileExists "$INSTDIR\icon.ico" 0 startmenu_try_exe
       CreateShortcut "$SMPROGRAMS\Music Scan Pro\Music Scan Pro.lnk" "$0" "" "$INSTDIR\icon.ico" 0 SW_SHOWNORMAL
+      DetailPrint "Created start menu shortcut with ico file"
       Goto startmenu_done
-    startmenu_no_icon:
-      CreateShortcut "$SMPROGRAMS\Music Scan Pro\Music Scan Pro.lnk" "$0" "" "" 0 SW_SHOWNORMAL
+    startmenu_try_exe:
+      ; Use the executable's embedded icon as fallback
+      CreateShortcut "$SMPROGRAMS\Music Scan Pro\Music Scan Pro.lnk" "$0" "" "$0" 0 SW_SHOWNORMAL
+      DetailPrint "Created start menu shortcut with exe icon"
     startmenu_done:
   ${EndIf}
   

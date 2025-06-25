@@ -7,16 +7,39 @@ const os = require('os');
 let mainWindow;
 
 function createWindow() {
-  // Load custom icon from root directory
+  // Load custom icon - prefer ICO on Windows for better compatibility
   let appIcon;
   
   try {
-    const iconPath = path.join(__dirname, 'icon.png');
-    if (fs.existsSync(iconPath)) {
-      appIcon = nativeImage.createFromPath(iconPath);
-      console.log('✅ Custom icon loaded from icon.png');
+    let iconPath;
+    
+    // On Windows, try ICO first for better integration
+    if (process.platform === 'win32') {
+      // Try multiple icon locations
+      const possiblePaths = [
+        path.join(__dirname, 'icon.ico'),
+        path.join(process.resourcesPath, 'icon.ico'),
+        path.join(__dirname, 'build', 'icon.ico'),
+        path.join(__dirname, 'icon.png')
+      ];
+      
+      for (const testPath of possiblePaths) {
+        if (fs.existsSync(testPath)) {
+          iconPath = testPath;
+          console.log(`✅ Found icon at: ${iconPath}`);
+          break;
+        }
+      }
     } else {
-      console.log('❌ icon.png not found, using default');
+      // On other platforms, use PNG
+      iconPath = path.join(__dirname, 'icon.png');
+    }
+    
+    if (iconPath && fs.existsSync(iconPath)) {
+      appIcon = nativeImage.createFromPath(iconPath);
+      console.log(`✅ Custom icon loaded from ${iconPath}`);
+    } else {
+      console.log('❌ No icon found, using default');
     }
   } catch (error) {
     console.log('❌ Failed to load icon:', error.message);
