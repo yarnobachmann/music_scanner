@@ -4,6 +4,7 @@ import requests
 import time
 from collections import defaultdict
 from difflib import SequenceMatcher
+from datetime import datetime, timedelta
 import io
 
 # Configure stdout to handle Unicode properly on Windows
@@ -148,6 +149,56 @@ def get_album_tracks(artist_name, album_name):
         album_cache[cache_key] = []
         return []
 
+def get_album_info_with_date(artist_name, album_name):
+    """Get album info including release date."""
+    cache_key = f"{artist_name}_{album_name}_info"
+    if cache_key in album_cache:
+        return album_cache[cache_key]
+    
+    params = {
+        'method': 'album.getinfo',
+        'artist': artist_name,
+        'album': album_name,
+        'api_key': LASTFM_API_KEY,
+        'format': 'json'
+    }
+    
+    try:
+        r = requests.get(LASTFM_API, params=params, timeout=10)
+        data = r.json()
+        album_info = data.get('album', {})
+        
+        # Extract release date if available
+        release_date = None
+        wiki = album_info.get('wiki', {})
+        if wiki and 'published' in wiki:
+            try:
+                # Last.fm date format: "01 Jan 2023, 00:00"
+                date_str = wiki['published'].split(',')[0]  # Remove time part
+                release_date = datetime.strptime(date_str, "%d %b %Y")
+            except:
+                pass
+        
+        result = {
+            'tracks': [track['name'] for track in album_info.get('tracks', {}).get('track', [])],
+            'release_date': release_date,
+            'playcount': album_info.get('playcount', '0')
+        }
+        album_cache[cache_key] = result
+        return result
+    except Exception as e:
+        print(f"Error getting album info for {album_name}: {e}", file=sys.stderr)
+        result = {'tracks': [], 'release_date': None, 'playcount': '0'}
+        album_cache[cache_key] = result
+        return result
+
+def is_recent_release(release_date, months=6):
+    """Check if a release date is within the specified number of months."""
+    if not release_date:
+        return False
+    cutoff_date = datetime.now() - timedelta(days=months * 30)
+    return release_date >= cutoff_date
+
 if len(sys.argv) < 2:
     print(json.dumps({'error': 'No scan result provided'}))
     sys.exit(1)
@@ -160,9 +211,7 @@ collection = defaultdict(list)
 for t in local_tracks:
     collection[t['artist']].append(t)
 
-missing_tracks = []
-new_albums = []
-new_songs = []
+all_missing_tracks = []  # This will contain EVERYTHING missing
 processed_artists = 0
 total_artists = len(collection)
 
@@ -174,7 +223,6 @@ for artist, tracks in collection.items():
     artist_info = get_artist_info(artist)
     if not artist_info:
         print(f"Could not find artist: {artist}, continuing with limited data...", file=sys.stderr)
-        # Don't skip the artist, continue with what we can find
     
     # Get artist data from Last.fm
     all_albums = get_artist_albums(artist)
@@ -185,130 +233,183 @@ for artist, tracks in collection.items():
     local_albums = set(track['album'] for track in tracks if track['album'])
     local_track_names = set(track['track'] for track in tracks)
     
-    # Find new albums
+    # Step 1: Find ALL missing album tracks
     for album_info in all_albums:
         if isinstance(album_info, dict):
             album_name = album_info['name']
             playcount = int(album_info.get('playcount', 0))
             
+            # Skip very unpopular albums
+            if playcount < 2000:
+                continue
+                
             # Check if we have this album locally (with fuzzy matching)
             has_album = any(is_similar(album_name, local_album) for local_album in local_albums)
             
-            if not has_album and playcount > 2000:  # Lower threshold for albums
-                new_albums.append({
-                    'artist': artist,
-                    'album': album_name,
-                    'playcount': playcount
-                })
+            if not has_album:
+                # Get all tracks from this missing album
+                album_info_detailed = get_album_info_with_date(artist, album_name)
+                album_tracks = album_info_detailed['tracks']
+                release_date = album_info_detailed['release_date']
+                
+                # Add all tracks from this missing album
+                for track_name in album_tracks:
+                    # Don't add if we already have this track locally
+                    has_track = any(is_similar(track_name, local_track) for local_track in local_track_names)
+                    if not has_track:
+                        all_missing_tracks.append({
+                            'artist': artist,
+                            'album': album_name,
+                            'track': track_name,
+                            'release_date': release_date,
+                            'type': 'album_track',
+                            'playcount': playcount
+                        })
     
-    # Check top tracks for ALL missing songs (both album tracks and singles)
+    # Step 2: Find missing singles (popular tracks NOT from known albums)
     for track_info in top_tracks:
         if isinstance(track_info, dict):
             track_name = track_info['name']
             playcount = int(track_info.get('playcount', 0))
             
-            # Check if we have this track locally (with fuzzy matching)
+            # Skip very unpopular tracks
+            if playcount < 100:
+                continue
+                
+            # Check if we have this track locally
             has_track = any(is_similar(track_name, local_track) for local_track in local_track_names)
             
-            if not has_track and playcount > 100:  # Much lower threshold for tracks
-                # Try to determine which album it belongs to
-                album_name = "Popular Track"  # Default for singles
+            if not has_track:
+                # Check if this track belongs to any known album
                 is_from_known_album = False
+                source_album = "Popular Single"
                 
-                # Check if it belongs to any of the artist's albums (not just ones we have)
                 for album_info in all_albums:
                     if isinstance(album_info, dict):
                         album_tracks = get_album_tracks(artist, album_info['name'])
                         if any(is_similar(track_name, album_track) for album_track in album_tracks):
-                            album_name = album_info['name']
                             is_from_known_album = True
+                            source_album = album_info['name']
                             break
                 
-                # Add ALL missing tracks to missing_tracks
-                missing_tracks.append({
-                    'artist': artist,
-                    'album': album_name,
-                    'track': track_name
-                })
+                # Only add if it's NOT already added as part of an album
+                already_added = any(
+                    t['artist'] == artist and is_similar(t['track'], track_name) 
+                    for t in all_missing_tracks
+                )
                 
-                # If it's NOT from a known album, also add to new_songs (singles)
-                if not is_from_known_album:
-                    new_songs.append({
+                if not already_added:
+                    all_missing_tracks.append({
                         'artist': artist,
+                        'album': source_album,
                         'track': track_name,
+                        'release_date': None,  # Singles often don't have release dates in Last.fm
+                        'type': 'single' if not is_from_known_album else 'album_track',
                         'playcount': playcount
                     })
     
-    # Check recent tracks for newer releases (like "Zombie")
+    # Step 3: Check recent tracks for very new releases
     for track_info in recent_tracks:
         if isinstance(track_info, dict):
             track_name = track_info['name']
             playcount = int(track_info.get('playcount', 0))
             
-            # Check if we have this track locally (with fuzzy matching)
+            # Check if we have this track locally
             has_track = any(is_similar(track_name, local_track) for local_track in local_track_names)
             
-            if not has_track:  # No playcount threshold for recent tracks
-                # Try to determine if it's from an album or a single
-                is_from_known_album = False
-                album_name = "Recent Release"
-                
-                # Check if it belongs to any album
-                for album_info in all_albums:
-                    if isinstance(album_info, dict):
-                        album_tracks = get_album_tracks(artist, album_info['name'])
-                        if any(is_similar(track_name, album_track) for album_track in album_tracks):
-                            is_from_known_album = True
-                            album_name = album_info['name']
-                            break
-                
-                # Add to missing tracks if not already added
-                track_already_added = any(
+            if not has_track:
+                # Check if already added
+                already_added = any(
                     t['artist'] == artist and is_similar(t['track'], track_name) 
-                    for t in missing_tracks
+                    for t in all_missing_tracks
                 )
                 
-                if not track_already_added:
-                    missing_tracks.append({
-                        'artist': artist,
-                        'album': album_name,
-                        'track': track_name
-                    })
+                if not already_added:
+                    # Try to determine source album
+                    source_album = "Recent Release"
+                    is_from_known_album = False
                     
-                    # If it's NOT from a known album, also add to new_songs
-                    if not is_from_known_album:
-                        song_already_added = any(
-                            s['artist'] == artist and is_similar(s['track'], track_name) 
-                            for s in new_songs
-                        )
-                        if not song_already_added:
-                            new_songs.append({
-                                'artist': artist,
-                                'track': track_name,
-                                'playcount': playcount
-                            })
-    
-    # Note: We now check ALL popular tracks above, so no need for separate album-only checking
+                    for album_info in all_albums:
+                        if isinstance(album_info, dict):
+                            album_tracks = get_album_tracks(artist, album_info['name'])
+                            if any(is_similar(track_name, album_track) for album_track in album_tracks):
+                                is_from_known_album = True
+                                source_album = album_info['name']
+                                break
+                    
+                    all_missing_tracks.append({
+                        'artist': artist,
+                        'album': source_album,
+                        'track': track_name,
+                        'release_date': None,
+                        'type': 'recent_single' if not is_from_known_album else 'album_track',
+                        'playcount': playcount
+                    })
     
     # Count missing tracks for this artist
-    artist_missing_count = len([t for t in missing_tracks if t['artist'] == artist])
+    artist_missing_count = len([t for t in all_missing_tracks if t['artist'] == artist])
     print(f"  → Found {artist_missing_count} missing tracks for {artist}", file=sys.stderr)
     
     # Rate limiting
     time.sleep(0.1)
 
-# Sort results by popularity
-missing_tracks = sorted(missing_tracks, key=lambda x: x['artist'])[:300]  # Increased limit
-new_albums = sorted(new_albums, key=lambda x: x['playcount'], reverse=True)[:100]
-new_songs = sorted(new_songs, key=lambda x: x['playcount'], reverse=True)[:100]
+# Now generate the three lists according to your requirements:
 
-print(f"Final results: {len(missing_tracks)} missing tracks, {len(new_songs)} new songs", file=sys.stderr)
+# 1. Missing tracks: ALL missing tracks (no limit)
+missing_tracks = []
+for track in all_missing_tracks:
+    missing_tracks.append({
+        'artist': track['artist'],
+        'album': track['album'],
+        'track': track['track']
+    })
 
-# Debug: Check overlap between missing tracks and new songs
-missing_song_names = set(f"{t['artist']}:{t['track']}" for t in missing_tracks)
-new_song_names = set(f"{s['artist']}:{s['track']}" for s in new_songs)
-overlap = missing_song_names.intersection(new_song_names)
-print(f"Overlap between missing tracks and new songs: {len(overlap)} tracks", file=sys.stderr)
+# 2. New albums: Only albums from missing tracks that were released within 6 months
+new_albums = []
+album_tracks_map = {}
+
+# Group missing tracks by album
+for track in all_missing_tracks:
+    if track['type'] == 'album_track':
+        album_key = f"{track['artist']}|{track['album']}"
+        if album_key not in album_tracks_map:
+            album_tracks_map[album_key] = {
+                'artist': track['artist'],
+                'album': track['album'],
+                'release_date': track['release_date'],
+                'playcount': track['playcount'],
+                'tracks': []
+            }
+        album_tracks_map[album_key]['tracks'].append(track['track'])
+
+# Filter albums by release date (6 months)
+for album_info in album_tracks_map.values():
+    if is_recent_release(album_info['release_date'], months=6):
+        new_albums.append({
+            'artist': album_info['artist'],
+            'album': album_info['album'],
+            'playcount': album_info['playcount']
+        })
+
+# 3. New songs: Only singles from missing tracks released within 6 months
+new_songs = []
+for track in all_missing_tracks:
+    if track['type'] in ['single', 'recent_single']:
+        # For singles, we can't easily get release date, so we include recent ones
+        if track['type'] == 'recent_single':
+            new_songs.append({
+                'artist': track['artist'],
+                'track': track['track'],
+                'playcount': track['playcount']
+            })
+
+# Sort results
+missing_tracks = sorted(missing_tracks, key=lambda x: x['artist'])  # NO LIMIT
+new_albums = sorted(new_albums, key=lambda x: x['playcount'], reverse=True)
+new_songs = sorted(new_songs, key=lambda x: x['playcount'], reverse=True)
+
+print(f"Final results: {len(missing_tracks)} missing tracks, {len(new_albums)} new albums, {len(new_songs)} new songs", file=sys.stderr)
+print(f"New albums are filtered from missing tracks (6 months), new songs are recent singles from missing tracks", file=sys.stderr)
 
 result = {
     'missing_tracks': missing_tracks,
