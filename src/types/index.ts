@@ -60,6 +60,10 @@ export interface ElectronAPI {
   windowClose: () => void;
   windowMinimize: () => void;
   windowMaximize: () => void;
+  openExternal: (url: string) => Promise<{
+    success?: boolean;
+    error?: string;
+  }>;
 }
 
 declare global {

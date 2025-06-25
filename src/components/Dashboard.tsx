@@ -285,20 +285,34 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
     doc.save(fileName);
   };
 
-  const handleTrackClick = (artist: string, track: string) => {
+  const handleTrackClick = async (artist: string, track: string) => {
     // Create Last.fm URL for the track
     const encodedArtist = encodeURIComponent(artist);
     const encodedTrack = encodeURIComponent(track);
     const lastfmUrl = `https://www.last.fm/music/${encodedArtist}/_/${encodedTrack}`;
-    window.open(lastfmUrl, '_blank');
+    
+    // Open in external browser
+    if (window.electronAPI) {
+      await window.electronAPI.openExternal(lastfmUrl);
+    } else {
+      // Fallback for development
+      window.open(lastfmUrl, '_blank');
+    }
   };
 
-  const handleAlbumClick = (artist: string, album: string) => {
+  const handleAlbumClick = async (artist: string, album: string) => {
     // Create Last.fm URL for the album
     const encodedArtist = encodeURIComponent(artist);
     const encodedAlbum = encodeURIComponent(album);
     const lastfmUrl = `https://www.last.fm/music/${encodedArtist}/${encodedAlbum}`;
-    window.open(lastfmUrl, '_blank');
+    
+    // Open in external browser
+    if (window.electronAPI) {
+      await window.electronAPI.openExternal(lastfmUrl);
+    } else {
+      // Fallback for development
+      window.open(lastfmUrl, '_blank');
+    }
   };
 
   const getTotalMissingTracks = () => {
