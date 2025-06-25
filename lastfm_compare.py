@@ -195,6 +195,46 @@ def get_album_info_with_date(artist_name, album_name):
         album_cache[cache_key] = result
         return result
 
+def get_track_info(artist_name, track_name):
+    """Get individual track info including release year from Last.fm."""
+    cache_key = f"{artist_name}_{track_name}_track_info"
+    if cache_key in track_cache:
+        return track_cache[cache_key]
+    
+    params = {
+        'method': 'track.getinfo',
+        'artist': artist_name,
+        'track': track_name,
+        'api_key': LASTFM_API_KEY,
+        'format': 'json'
+    }
+    
+    try:
+        r = requests.get(LASTFM_API, params=params, timeout=10)
+        data = r.json()
+        track_info = data.get('track', {})
+        
+        # Try to get release year from track's album info
+        release_year = None
+        album_info = track_info.get('album', {})
+        if album_info and 'title' in album_info:
+            album_name = album_info['title']
+            # Get full album info to get release date
+            album_details = get_album_info_with_date(artist_name, album_name)
+            release_year = album_details.get('release_year')
+        
+        result = {
+            'release_year': release_year,
+            'album': album_info.get('title', 'Unknown') if album_info else 'Unknown'
+        }
+        track_cache[cache_key] = result
+        return result
+    except Exception as e:
+        print(f"Error getting track info for {artist_name} - {track_name}: {e}", file=sys.stderr)
+        result = {'release_year': None, 'album': 'Unknown'}
+        track_cache[cache_key] = result
+        return result
+
 def is_recent_release(release_date, months=6):
     """Check if a release date is within the specified number of months."""
     if not release_date:
@@ -304,12 +344,16 @@ for artist, tracks in collection.items():
                 )
                 
                 if not already_added:
+                    # Try to get track-specific info for release year
+                    track_details = get_track_info(artist, track_name)
+                    track_release_year = track_details.get('release_year')
+                    
                     all_missing_tracks.append({
                         'artist': artist,
                         'album': source_album,
                         'track': track_name,
                         'release_date': None,  # Singles often don't have release dates in Last.fm
-                        'release_year': None,
+                        'release_year': track_release_year,
                         'type': 'single' if not is_from_known_album else 'album_track',
                         'playcount': playcount
                     })
@@ -343,12 +387,16 @@ for artist, tracks in collection.items():
                                 source_album = album_info['name']
                                 break
                     
+                    # Try to get track-specific info for release year
+                    track_details = get_track_info(artist, track_name)
+                    track_release_year = track_details.get('release_year')
+                    
                     all_missing_tracks.append({
                         'artist': artist,
                         'album': source_album,
                         'track': track_name,
                         'release_date': None,
-                        'release_year': None,
+                        'release_year': track_release_year,
                         'type': 'recent_single' if not is_from_known_album else 'album_track',
                         'playcount': playcount
                     })
