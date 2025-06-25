@@ -1,6 +1,6 @@
 {
   "name": "music-scan-pro",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "A native desktop music collection analyzer using Last.fm",
   "main": "main.js",
   "scripts": {
@@ -14,6 +14,7 @@
     "pack": "electron-builder",
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && npm run create-ico-safe && npm run create-banner && electron-builder --win --publish never",
+    "clean": "rimraf dist out",
     "create-ico-safe": "npm run create-ico || echo \"Warning: ICO creation failed, using existing icon\"",
     "create-ico": "node build/create-ico-from-custom.js",
     "create-banner": "node build/create-proper-banner.js",
@@ -73,7 +74,7 @@
     "productName": "Music Scan Pro",
     "copyright": "Copyright © 2025 Music Scan Pro",
     "compression": "normal",
-    "icon": "build/icon.ico",
+    "icon": "icon.png",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -115,7 +116,7 @@
           ]
         }
       ],
-      "icon": "build/icon.ico",
+      "icon": "icon.png",
       "publisherName": "Music Scan Pro",
       "verifyUpdateCodeSignature": false,
       "signAndEditExecutable": false,
@@ -131,6 +132,7 @@
       "include": "build/installer-working.nsh",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
+      "artifactName": "${productName}-${version}-Setup.${ext}",
       "installerSidebar": "build/installer-banner.bmp",
       "uninstallerSidebar": "build/installer-banner.bmp",
       "runAfterFinish": false,
