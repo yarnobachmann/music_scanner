@@ -16,6 +16,7 @@ Page custom ShortcutOptionsPage ShortcutOptionsPageLeave
 
 ; Install banner and icon assets
 Section -InstallAssets
+  DetailPrint ">>> USING CUSTOM NSIS SCRIPT <<<"
   ; Copy the icon file to installation directory for shortcuts
   IfFileExists "${BUILD_RESOURCES_DIR}\icon.ico" 0 skip_icon_copy
     File "/oname=$INSTDIR\icon.ico" "${BUILD_RESOURCES_DIR}\icon.ico"
