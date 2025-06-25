@@ -22,6 +22,7 @@ if len(sys.argv) >= 3:
 # Simple cache
 artist_cache = {}
 album_cache = {}
+track_cache = {}
 
 def is_similar(str1, str2, threshold=0.8):
     """Check if two strings are similar using fuzzy matching"""
