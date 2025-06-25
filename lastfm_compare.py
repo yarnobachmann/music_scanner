@@ -170,25 +170,28 @@ def get_album_info_with_date(artist_name, album_name):
         
         # Extract release date if available
         release_date = None
+        release_year = None
         wiki = album_info.get('wiki', {})
         if wiki and 'published' in wiki:
             try:
                 # Last.fm date format: "01 Jan 2023, 00:00"
                 date_str = wiki['published'].split(',')[0]  # Remove time part
                 release_date = datetime.strptime(date_str, "%d %b %Y")
+                release_year = release_date.year
             except:
                 pass
         
         result = {
             'tracks': [track['name'] for track in album_info.get('tracks', {}).get('track', [])],
             'release_date': release_date,
+            'release_year': release_year,
             'playcount': album_info.get('playcount', '0')
         }
         album_cache[cache_key] = result
         return result
     except Exception as e:
         print(f"Error getting album info for {album_name}: {e}", file=sys.stderr)
-        result = {'tracks': [], 'release_date': None, 'playcount': '0'}
+        result = {'tracks': [], 'release_date': None, 'release_year': None, 'playcount': '0'}
         album_cache[cache_key] = result
         return result
 
@@ -251,6 +254,7 @@ for artist, tracks in collection.items():
                 album_info_detailed = get_album_info_with_date(artist, album_name)
                 album_tracks = album_info_detailed['tracks']
                 release_date = album_info_detailed['release_date']
+                release_year = album_info_detailed['release_year']
                 
                 # Add all tracks from this missing album
                 for track_name in album_tracks:
@@ -262,6 +266,7 @@ for artist, tracks in collection.items():
                             'album': album_name,
                             'track': track_name,
                             'release_date': release_date,
+                            'release_year': release_year,
                             'type': 'album_track',
                             'playcount': playcount
                         })
@@ -304,6 +309,7 @@ for artist, tracks in collection.items():
                         'album': source_album,
                         'track': track_name,
                         'release_date': None,  # Singles often don't have release dates in Last.fm
+                        'release_year': None,
                         'type': 'single' if not is_from_known_album else 'album_track',
                         'playcount': playcount
                     })
@@ -342,6 +348,7 @@ for artist, tracks in collection.items():
                         'album': source_album,
                         'track': track_name,
                         'release_date': None,
+                        'release_year': None,
                         'type': 'recent_single' if not is_from_known_album else 'album_track',
                         'playcount': playcount
                     })
@@ -361,7 +368,8 @@ for track in all_missing_tracks:
     missing_tracks.append({
         'artist': track['artist'],
         'album': track['album'],
-        'track': track['track']
+        'track': track['track'],
+        'year': track['release_year']
     })
 
 # 2. New albums: Only albums from missing tracks that were released within 6 months
@@ -377,6 +385,7 @@ for track in all_missing_tracks:
                 'artist': track['artist'],
                 'album': track['album'],
                 'release_date': track['release_date'],
+                'release_year': track['release_year'],
                 'playcount': track['playcount'],
                 'tracks': []
             }
@@ -388,7 +397,8 @@ for album_info in album_tracks_map.values():
         new_albums.append({
             'artist': album_info['artist'],
             'album': album_info['album'],
-            'playcount': album_info['playcount']
+            'playcount': album_info['playcount'],
+            'year': album_info['release_year']
         })
 
 # 3. New songs: Only very recent singles, heavily filtered to avoid old popular tracks
@@ -406,6 +416,7 @@ for track in all_missing_tracks:
                 'artist': track['artist'],
                 'track': track['track'],
                 'playcount': playcount,
+                'year': track['release_year'],
                 'source': 'recent'
             })
         elif playcount >= 50000:
@@ -416,6 +427,7 @@ for track in all_missing_tracks:
                 'artist': track['artist'],
                 'track': track['track'],
                 'playcount': playcount,
+                'year': track['release_year'],
                 'source': 'viral'
             })
 

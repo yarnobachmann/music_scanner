@@ -187,11 +187,12 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
         const missingTracksData = comparison.missing_tracks.slice(0, 50).map(track => [
           track.artist,
           track.album,
-          track.track
+          track.track,
+          track.year || 'Unknown'
         ]);
 
         autoTable(doc, {
-          head: [['Artist', 'Album', 'Track']],
+          head: [['Artist', 'Album', 'Track', 'Year']],
           body: missingTracksData,
           startY: yPosition,
           styles: { fontSize: 9 },
@@ -216,11 +217,12 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
         const newAlbumsData = comparison.new_albums.slice(0, 30).map(album => [
           album.artist,
           album.album,
-          album.playcount.toLocaleString()
+          album.playcount.toLocaleString(),
+          album.year || 'Unknown'
         ]);
 
         autoTable(doc, {
-          head: [['Artist', 'Album', 'Play Count']],
+          head: [['Artist', 'Album', 'Play Count', 'Year']],
           body: newAlbumsData,
           startY: yPosition,
           styles: { fontSize: 9 },
@@ -245,11 +247,12 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
         const newSongsData = comparison.new_songs.slice(0, 30).map(song => [
           song.artist,
           song.track,
-          song.playcount.toLocaleString()
+          song.playcount.toLocaleString(),
+          song.year || 'Unknown'
         ]);
 
         autoTable(doc, {
-          head: [['Artist', 'Track', 'Play Count']],
+          head: [['Artist', 'Track', 'Play Count', 'Year']],
           body: newSongsData,
           startY: yPosition,
           styles: { fontSize: 9 },
@@ -462,21 +465,36 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
                   <div key={album} className="border-l-2 border-rock-gray pl-4">
                     <h4 className="text-lg font-medium text-rock-gold mb-2">{album}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {tracks.map((track, index) => (
-                        <button
-                          key={index}
-                          onClick={() => handleTrackClick(artist, track)}
-                          className="interactive text-gray-300 text-sm bg-rock-gray rounded px-3 py-2 hover:bg-rock-light transition-colors text-left flex items-center justify-between group"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-rock-accent rounded flex items-center justify-center">
-                              <Music size={16} className="text-white" />
+                      {tracks.map((track, index) => {
+                        // Find the corresponding track data to get the year
+                        const trackData = comparison?.missing_tracks.find(t => 
+                          t.artist === artist && t.album === album && t.track === track
+                        );
+                        const year = trackData?.year;
+                        
+                        return (
+                          <button
+                            key={index}
+                            onClick={() => handleTrackClick(artist, track)}
+                            className="interactive text-gray-300 text-sm bg-rock-gray rounded px-3 py-2 hover:bg-rock-light transition-colors text-left flex items-center justify-between group"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-rock-accent rounded flex items-center justify-center">
+                                <Music size={16} className="text-white" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span>{track}</span>
+                                {year && (
+                                  <span className="text-xs text-gray-500">
+                                    {year}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <span>{track}</span>
-                          </div>
-                          <Play size={14} className="text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </button>
-                      ))}
+                            <Play size={14} className="text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -546,7 +564,14 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
                       <div className="w-10 h-10 bg-green-500 rounded flex items-center justify-center">
                         <Album size={20} className="text-white" />
                       </div>
-                      <span className="text-white font-medium">{album.album}</span>
+                      <div className="flex flex-col">
+                        <span className="text-white font-medium">{album.album}</span>
+                        {album.year && (
+                          <span className="text-xs text-gray-500">
+                            {album.year}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <ExternalLink size={16} className="text-gray-400" />
                   </div>
@@ -620,7 +645,14 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
                       <div className="w-10 h-10 bg-purple-500 rounded flex items-center justify-center">
                         <Music size={20} className="text-white" />
                       </div>
-                      <span className="text-white font-medium">{song.track}</span>
+                      <div className="flex flex-col">
+                        <span className="text-white font-medium">{song.track}</span>
+                        {song.year && (
+                          <span className="text-xs text-gray-500">
+                            {song.year}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <Play size={16} className="text-gray-400" />
                   </div>

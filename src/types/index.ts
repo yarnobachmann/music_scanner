@@ -17,16 +17,19 @@ export interface LastFMComparison {
     artist: string;
     album: string;
     track: string;
+    year?: number;
   }[];
   new_albums: {
     artist: string;
     album: string;
     playcount: number;
+    year?: number;
   }[];
   new_songs: {
     artist: string;
     track: string;
     playcount: number;
+    year?: number;
   }[];
   total_local_tracks: number;
   total_artists: number;
