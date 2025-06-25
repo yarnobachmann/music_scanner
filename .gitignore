@@ -10,8 +10,8 @@
 /.next/
 /out/
 
-# Production
-/build
+# Production build outputs (but keep build scripts)
+# /build
 
 # Misc
 .DS_Store
@@ -47,8 +47,8 @@ __pycache__/
 /out/
 *.tsbuildinfo
 
-# Icon files (add your own)
+# Generated icon files (keep source scripts)
 build/icon.ico
 build/icon.icns
-build/icon.png
-build/background.png 
+build/background.png
+build/installer-banner.bmp 
