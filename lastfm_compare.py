@@ -196,6 +196,67 @@ def get_album_info_with_date(artist_name, album_name):
         album_cache[cache_key] = result
         return result
 
+def get_similar_artists(artist_name, limit=5):
+    """Get similar artists from Last.fm."""
+    cache_key = f"{artist_name}_similar"
+    if cache_key in artist_cache:
+        return artist_cache[cache_key]
+    
+    params = {
+        'method': 'artist.getsimilar',
+        'artist': artist_name,
+        'api_key': LASTFM_API_KEY,
+        'format': 'json',
+        'limit': limit
+    }
+    
+    try:
+        r = requests.get(LASTFM_API, params=params, timeout=10)
+        data = r.json()
+        print(f"Similar artists API response for {artist_name}: {len(data.get('similarartists', {}).get('artist', []))} artists", file=sys.stderr)
+        
+        similar_artists = data.get('similarartists', {}).get('artist', [])
+        
+        processed_artists = []
+        for artist_data in similar_artists:
+            if isinstance(artist_data, dict):
+                artist_name_similar = artist_data.get('name', '')
+                similarity = float(artist_data.get('match', 0))
+                
+                # Get additional artist info for images and better data
+                artist_info = get_artist_info(artist_name_similar)
+                
+                # Extract image URL if available
+                image_url = None
+                if artist_info and 'image' in artist_info:
+                    images = artist_info['image']
+                    if isinstance(images, list) and len(images) > 0:
+                        # Find medium or large size image
+                        for img in images:
+                            if img.get('size') in ['medium', 'large']:
+                                image_url = img.get('#text', '')
+                                break
+                        # Fallback to any image
+                        if not image_url and len(images) > 0:
+                            image_url = images[-1].get('#text', '')
+                
+                processed_artists.append({
+                    'name': artist_name_similar,
+                    'similarity': similarity,
+                    'listeners': int(artist_data.get('listeners', 0)) if 'listeners' in artist_data else (int(artist_info.get('stats', {}).get('listeners', 50000)) if artist_info else 50000),
+                    'playcount': int(artist_data.get('playcount', 0)) if 'playcount' in artist_data else (int(artist_info.get('stats', {}).get('playcount', 100000)) if artist_info else 100000),
+                    'tags': [tag.get('name', '') for tag in artist_info.get('tags', {}).get('tag', [])[:3]] if artist_info else [],
+                    'image': image_url
+                })
+                print(f"Added similar artist: {artist_name_similar} (similarity: {similarity})", file=sys.stderr)
+        
+        artist_cache[cache_key] = processed_artists
+        return processed_artists
+    except Exception as e:
+        print(f"Error getting similar artists for {artist_name}: {e}", file=sys.stderr)
+        artist_cache[cache_key] = []
+        return []
+
 def get_track_info(artist_name, track_name):
     """Get individual track info including release year from Last.fm."""
     cache_key = f"{artist_name}_{track_name}_track_info"
@@ -215,8 +276,10 @@ def get_track_info(artist_name, track_name):
         data = r.json()
         track_info = data.get('track', {})
         
-        # Try to get release year from track's album info
         release_year = None
+        album_name = 'Unknown'
+        
+        # Method 1: Try to get release year from track's album info
         album_info = track_info.get('album', {})
         if album_info and 'title' in album_info:
             album_name = album_info['title']
@@ -224,9 +287,35 @@ def get_track_info(artist_name, track_name):
             album_details = get_album_info_with_date(artist_name, album_name)
             release_year = album_details.get('release_year')
         
+        # Method 2: If no album info or no release year found, try track's wiki info
+        if not release_year:
+            wiki = track_info.get('wiki', {})
+            if wiki and 'published' in wiki:
+                try:
+                    # Last.fm date format: "01 Jan 2023, 00:00"
+                    date_str = wiki['published'].split(',')[0]  # Remove time part
+                    release_date = datetime.strptime(date_str, "%d %b %Y")
+                    release_year = release_date.year
+                except:
+                    pass
+        
+        # Method 3: If still no year, try extracting from track's toptags (sometimes has year info)
+        if not release_year:
+            toptags = track_info.get('toptags', {}).get('tag', [])
+            if toptags:
+                for tag in toptags:
+                    if isinstance(tag, dict):
+                        tag_name = tag.get('name', '')
+                        # Look for year tags like "2023", "released in 2023", etc.
+                        if tag_name.isdigit() and len(tag_name) == 4:
+                            year = int(tag_name)
+                            if 1950 <= year <= datetime.now().year:  # Reasonable year range
+                                release_year = year
+                                break
+        
         result = {
             'release_year': release_year,
-            'album': album_info.get('title', 'Unknown') if album_info else 'Unknown'
+            'album': album_name
         }
         track_cache[cache_key] = result
         return result
@@ -421,8 +510,8 @@ for track in all_missing_tracks:
         'year': track['release_year']
     })
 
-# 2. New albums: Only albums from missing tracks that were released within 6 months
-new_albums = []
+# 2. Popular albums: Most popular missing albums by playcount
+popular_albums = []
 album_tracks_map = {}
 
 # Group missing tracks by album
@@ -440,59 +529,109 @@ for track in all_missing_tracks:
             }
         album_tracks_map[album_key]['tracks'].append(track['track'])
 
-# Filter albums by release date (6 months)
+# Filter albums by popularity (minimum playcount threshold)
 for album_info in album_tracks_map.values():
-    if is_recent_release(album_info['release_date'], months=6):
-        new_albums.append({
+    if album_info['playcount'] >= 10000:  # Only include reasonably popular albums
+        popular_albums.append({
             'artist': album_info['artist'],
             'album': album_info['album'],
             'playcount': album_info['playcount'],
             'year': album_info['release_year']
         })
 
-# 3. New songs: Only very recent singles, heavily filtered to avoid old popular tracks
-new_songs = []
+# 3. Popular songs: Most popular missing singles by playcount
+popular_songs = []
+
 for track in all_missing_tracks:
     if track['type'] in ['single', 'recent_single']:
-        is_recent = track['type'] == 'recent_single'
-        playcount = track['playcount']
+        # Filter by popularity (minimum playcount threshold)
+        if track['playcount'] >= 5000:  # Only include reasonably popular singles
+            popular_songs.append({
+                'artist': track['artist'],
+                'track': track['track'],
+                'playcount': track['playcount'],
+                'year': track['release_year']
+            })
+
+# 4. Generate artist recommendations based on user's collection
+print("Generating artist recommendations...", file=sys.stderr)
+recommendations = []
+user_artists = set(collection.keys())
+
+# Get a sample of the user's most popular artists (to avoid too many API calls)
+sample_artists = list(collection.keys())[:5]  # Top 5 artists to start with
+print(f"Sample artists for recommendations: {sample_artists}", file=sys.stderr)
+
+for artist in sample_artists:
+    print(f"Getting similar artists for {artist}...", file=sys.stderr)
+    similar_artists = get_similar_artists(artist, limit=10)
+    print(f"Found {len(similar_artists)} similar artists for {artist}", file=sys.stderr)
+    
+    for similar_artist in similar_artists:
+        artist_name = similar_artist['name']
+        print(f"Processing similar artist: {artist_name} (similarity: {similar_artist['similarity']})", file=sys.stderr)
         
-        # Be much more restrictive to avoid old popular songs showing up as "new"
-        # Only include tracks if they meet strict criteria for being recent:
-        if is_recent:
-            # Always include tracks from recent tracks API (most likely to be new)
-            new_songs.append({
-                'artist': track['artist'],
-                'track': track['track'],
-                'playcount': playcount,
-                'year': track['release_year'],
-                'source': 'recent'
-            })
-        elif playcount >= 50000:
-            # For regular singles, only include if they have very high playcount
-            # (indicating a major recent release that's gaining massive traction)
-            # This helps avoid old popular songs while catching new viral hits
-            new_songs.append({
-                'artist': track['artist'],
-                'track': track['track'],
-                'playcount': playcount,
-                'year': track['release_year'],
-                'source': 'viral'
-            })
+        # Only include artists the user doesn't already have
+        if artist_name.lower() not in [ua.lower() for ua in user_artists]:
+            # Check if we already have this recommendation
+            existing = next((r for r in recommendations if r['artist'].lower() == artist_name.lower()), None)
+            
+            if existing:
+                # If we already have this artist, increase the similarity score (weighted average)
+                existing['similarity'] = (existing['similarity'] + similar_artist['similarity']) / 2
+                existing['source_count'] += 1
+                print(f"Updated existing recommendation: {artist_name}", file=sys.stderr)
+            else:
+                # Add new recommendation
+                recommendations.append({
+                    'artist': artist_name,
+                    'similarity': similar_artist['similarity'],
+                    'listeners': similar_artist['listeners'],
+                    'playcount': similar_artist['playcount'],
+                    'tags': similar_artist['tags'],
+                    'source_count': 1
+                })
+                print(f"Added new recommendation: {artist_name}", file=sys.stderr)
+        else:
+            print(f"Skipping {artist_name} - already in user's collection", file=sys.stderr)
+    
+    # Rate limiting
+    time.sleep(0.2)
+
+print(f"Total raw recommendations before filtering: {len(recommendations)}", file=sys.stderr)
+
+# Filter and sort recommendations - make less restrictive
+# Only include artists with some similarity (lowered threshold)
+filtered_recommendations = [
+    r for r in recommendations 
+    if r['similarity'] > 0.1 and r['listeners'] > 1000  # Much lower thresholds
+]
+
+print(f"Recommendations after filtering: {len(filtered_recommendations)}", file=sys.stderr)
+
+# Sort by a combination of similarity and popularity
+sorted_recommendations = sorted(
+    filtered_recommendations, 
+    key=lambda x: (x['similarity'] * 0.7 + (x['listeners'] / 1000000) * 0.3), 
+    reverse=True
+)[:15]  # Top 15 recommendations
+
+print(f"Final sorted recommendations: {len(sorted_recommendations)}", file=sys.stderr)
 
 # Sort results
 missing_tracks = sorted(missing_tracks, key=lambda x: x['artist'])  # NO LIMIT
-new_albums = sorted(new_albums, key=lambda x: x['playcount'], reverse=True)
-# Sort new songs: recent tracks first, then viral hits by playcount
-new_songs = sorted(new_songs, key=lambda x: (x['source'] != 'recent', -x['playcount']))
+popular_albums = sorted(popular_albums, key=lambda x: x['playcount'], reverse=True)
+# Sort popular songs by playcount (most popular singles first)
+popular_songs = sorted(popular_songs, key=lambda x: -x['playcount'])
 
-print(f"Final results: {len(missing_tracks)} missing tracks, {len(new_albums)} new albums, {len(new_songs)} new songs", file=sys.stderr)
-print(f"New albums are filtered from missing tracks (6 months), new songs are heavily filtered recent/viral singles only", file=sys.stderr)
+print(f"Final results: {len(missing_tracks)} missing tracks, {len(popular_albums)} popular albums, {len(popular_songs)} popular songs, {len(sorted_recommendations)} recommendations", file=sys.stderr)
+print(f"Popular albums are filtered by minimum 10K plays, popular songs are filtered by minimum 5K plays", file=sys.stderr)
 
 result = {
     'missing_tracks': missing_tracks,
-    'new_albums': new_albums,
-    'new_songs': new_songs,
+    'new_albums': popular_albums,
+    'new_songs': popular_songs,
+    'recommendations': sorted_recommendations,
     'total_local_tracks': len(local_tracks),
     'total_artists': len(collection)
 }

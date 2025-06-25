@@ -18,7 +18,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
   const [comparison, setComparison] = useState<LastFMComparison | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(propError);
-  const [activeTab, setActiveTab] = useState<'overview' | 'missing' | 'albums' | 'songs'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'missing' | 'albums' | 'songs' | 'recommendations'>('overview');
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<Settings>({});
 
@@ -330,10 +330,14 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
     return comparison?.new_songs.length || 0;
   };
 
+  const getTotalRecommendations = () => {
+    return comparison?.recommendations?.length || 0;
+  };
+
   const renderOverview = () => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
       {/* Collection Stats */}
-      <div className="music-card bg-rock-dark rounded-lg p-6 md:col-span-3">
+      <div className="music-card bg-rock-dark rounded-lg p-6 md:col-span-4">
         <h3 className="text-xl font-bold text-white mb-4 flex items-center">
           <Music className="mr-2" size={24} />
           Your Collection
@@ -378,13 +382,13 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
           >
             <div className="flex items-center space-x-3 mb-4">
               <Album className="text-green-500" size={24} />
-              <h3 className="text-lg font-semibold text-white">New Albums</h3>
+              <h3 className="text-lg font-semibold text-white">Popular Albums</h3>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-green-500 mb-2">
                 {getTotalNewAlbums()}
               </div>
-              <p className="text-gray-400 text-sm">new albums to explore</p>
+              <p className="text-gray-400 text-sm">popular albums to explore</p>
             </div>
           </button>
 
@@ -394,13 +398,29 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
           >
             <div className="flex items-center space-x-3 mb-4">
               <Music className="text-purple-500" size={24} />
-              <h3 className="text-lg font-semibold text-white">New Songs</h3>
+              <h3 className="text-lg font-semibold text-white">Popular Songs</h3>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-purple-500 mb-2">
                 {getTotalNewSongs()}
               </div>
-              <p className="text-gray-400 text-sm">new singles &amp; popular tracks</p>
+              <p className="text-gray-400 text-sm">popular singles &amp; tracks</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('recommendations')}
+            className="interactive music-card bg-rock-dark rounded-lg p-6 hover:bg-rock-light transition-colors text-left w-full"
+          >
+            <div className="flex items-center space-x-3 mb-4">
+              <User className="text-blue-500" size={24} />
+              <h3 className="text-lg font-semibold text-white">Artist Recommendations</h3>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-blue-500 mb-2">
+                {getTotalRecommendations()}
+              </div>
+              <p className="text-gray-400 text-sm">artists similar to your taste</p>
             </div>
           </button>
         </>
@@ -539,7 +559,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
       <div className="space-y-6">
         {Object.keys(groupedAlbums).length === 0 && (
           <div className="text-center py-8">
-            <p className="text-gray-400">No new albums found. You&apos;re up to date!</p>
+            <p className="text-gray-400">No popular albums found. You have all the hits!</p>
           </div>
         )}
         {Object.entries(groupedAlbums).map(([artist, albums]) => (
@@ -548,7 +568,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
               <User className="text-green-500" size={20} />
               <h3 className="text-xl font-semibold text-white">{artist}</h3>
               <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                {albums.length} new
+                {albums.length} popular
               </span>
             </div>
             
@@ -620,7 +640,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
       <div className="space-y-6">
         {Object.keys(groupedSongs).length === 0 && (
           <div className="text-center py-8">
-            <p className="text-gray-400">No new songs found. You have all the popular tracks!</p>
+            <p className="text-gray-400">No popular songs found. You have all the hits!</p>
           </div>
         )}
         {Object.entries(groupedSongs).map(([artist, songs]) => (
@@ -629,7 +649,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
               <User className="text-purple-500" size={20} />
               <h3 className="text-xl font-semibold text-white">{artist}</h3>
               <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
-                {songs.length} new
+                {songs.length} popular
               </span>
             </div>
             
@@ -664,6 +684,99 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
             </div>
           </div>
         ))}
+      </div>
+    );
+  };
+
+  const renderRecommendations = () => {
+    if (!comparison || !comparison.recommendations) {
+      return (
+        <div className="text-center py-12">
+          <User className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">No Analysis Yet</h3>
+          <p className="text-gray-400 mb-6">
+            Click &quot;Analyze with Last.fm&quot; to discover artists similar to your collection
+          </p>
+          <button
+            onClick={handleLastFMAnalysis}
+            disabled={loading}
+            className="bg-rock-accent text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Analyzing...' : 'Analyze with Last.fm'}
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {comparison.recommendations.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-400">No artist recommendations found. Your taste is too unique!</p>
+          </div>
+        )}
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+           {comparison.recommendations.map((artist, index) => (
+             <button
+               key={index}
+               onClick={() => handleTrackClick(artist.artist, '')}
+               className="interactive bg-rock-dark rounded-lg p-6 hover:bg-rock-light transition-colors text-left w-full"
+             >
+               <div className="flex items-center justify-between mb-4">
+                 <div className="flex items-center space-x-3">
+                   <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center overflow-hidden">
+                     {artist.image ? (
+                       <img 
+                         src={artist.image} 
+                         alt={artist.artist}
+                         className="w-full h-full object-cover"
+                         onError={(e) => {
+                           // Fallback to user icon if image fails to load
+                           const target = e.target as HTMLImageElement;
+                           target.style.display = 'none';
+                           target.nextElementSibling?.classList.remove('hidden');
+                         }}
+                       />
+                     ) : null}
+                     <User size={24} className={`text-white ${artist.image ? 'hidden' : ''}`} />
+                   </div>
+                   <div className="flex flex-col">
+                     <span className="text-white font-medium text-lg">{artist.artist}</span>
+                     <span className="text-xs text-blue-400">
+                       {Math.round(artist.similarity * 100)}% similarity
+                     </span>
+                   </div>
+                 </div>
+                 <ExternalLink size={16} className="text-gray-400" />
+               </div>
+              
+              <div className="space-y-2 text-xs text-gray-400">
+                <div className="flex justify-between">
+                  <span>Listeners:</span>
+                  <span>{artist.listeners.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Plays:</span>
+                  <span>{artist.playcount.toLocaleString()}</span>
+                </div>
+                {artist.tags.length > 0 && (
+                  <div className="mt-3">
+                    <div className="flex flex-wrap gap-1">
+                      {artist.tags.slice(0, 3).map((tag, tagIndex) => (
+                        <span
+                          key={tagIndex}
+                          className="bg-rock-gray text-xs px-2 py-1 rounded-full text-gray-300"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
     );
   };
@@ -739,8 +852,9 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
             {[
               { key: 'overview', label: 'Overview' },
               { key: 'missing', label: `Missing Tracks (${getTotalMissingTracks()})` },
-              { key: 'albums', label: `New Albums (${getTotalNewAlbums()})` },
-              { key: 'songs', label: `New Songs (${getTotalNewSongs()})` },
+              { key: 'albums', label: `Popular Albums (${getTotalNewAlbums()})` },
+              { key: 'songs', label: `Popular Songs (${getTotalNewSongs()})` },
+              { key: 'recommendations', label: `Artist Recommendations (${getTotalRecommendations()})` },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -769,6 +883,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
             {activeTab === 'missing' && renderMissingTracks()}
             {activeTab === 'albums' && renderNewAlbums()}
             {activeTab === 'songs' && renderNewSongs()}
+            {activeTab === 'recommendations' && renderRecommendations()}
           </div>
         </div>
       )}

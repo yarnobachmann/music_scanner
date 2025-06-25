@@ -31,6 +31,14 @@ export interface LastFMComparison {
     playcount: number;
     year?: number;
   }[];
+  recommendations?: {
+    artist: string;
+    similarity: number;
+    listeners: number;
+    playcount: number;
+    tags: string[];
+    image?: string;
+  }[];
   total_local_tracks: number;
   total_artists: number;
 }
