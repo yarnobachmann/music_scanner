@@ -51,4 +51,9 @@ __pycache__/
 !build/icon.ico
 !build/icon.icns
 !build/background.png
-!build/installer-banner.bmp 
+!build/installer-banner.bmp
+
+# Bin directory icon files (needed for hybrid build)
+!bin/
+!bin/*.ico
+!bin/*.png 
