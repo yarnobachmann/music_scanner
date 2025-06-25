@@ -13,7 +13,7 @@
     "lint": "next lint",
     "pack": "electron-builder",
     "dist": "npm run build && electron-builder",
-    "dist:win": "npm run build && npm run create-ico-safe && npm run create-banner && electron-builder --win --publish never",
+    "dist:win": "npm run build && npm run create-banner && electron-builder --win --publish never",
     "clean": "rimraf dist out",
     "create-ico-safe": "npm run create-ico || echo \"Warning: ICO creation failed, using existing icon\"",
     "create-ico": "node build/create-ico-from-custom.js",
