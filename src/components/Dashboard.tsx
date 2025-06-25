@@ -34,6 +34,79 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
 
   // Remove auto-analysis - user will trigger manually
 
+  const LastFMLoadingSpinner: React.FC = () => {
+    const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+    
+    const lastfmLoadingMessages = [
+      "🎤 Analyzing your collection with Last.fm...",
+      "📊 Fetching top tracks and albums...",
+      "🔍 Comparing with global music trends...",
+      "🎯 Finding missing chart-toppers...",
+      "🌟 Discovering popular releases...",
+      "📈 Analyzing listening patterns...",
+      "🎵 Cross-referencing with Last.fm database...",
+      "🎸 Scanning for hidden classics...",
+      "💿 Checking album completeness...",
+      "🎧 Evaluating your music taste...",
+      "🔥 Hunting for trending tracks...",
+      "📻 Tuning into popular frequencies...",
+      "🎶 Harmonizing with the music community...",
+      "🎺 Jazz-ing up the Last.fm connection...",
+      "🥁 Beating through the charts...",
+      "🎹 Playing the keys to discovery..."
+    ];
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setCurrentMessageIndex((prev) => (prev + 1) % lastfmLoadingMessages.length);
+      }, 2500); // Slightly slower rotation for Last.fm messages
+
+      return () => clearInterval(interval);
+    }, [lastfmLoadingMessages.length]);
+
+    return (
+      <div className="flex flex-col items-center justify-center space-y-8 px-8">
+        {/* Logo */}
+        <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg overflow-hidden bg-white/10 backdrop-blur-sm">
+          <Image 
+            src="./icon.png" 
+            alt="Music Scan Pro" 
+            width={64} 
+            height={64} 
+            className="rounded-full"
+            priority
+            unoptimized
+          />
+        </div>
+        
+        {/* App Title */}
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-bold gradient-text">Last.fm Analysis</h2>
+          <p className="text-gray-400 text-sm">Connecting with the global music community</p>
+        </div>
+        
+        {/* Loading Spinner */}
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-rock-gray border-t-red-500 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-rock-gold rounded-full animate-spin animation-delay-150"></div>
+        </div>
+        
+        {/* Loading Message */}
+        <div className="text-center space-y-2 max-w-md">
+          <p className="text-white text-lg font-medium animate-pulse">{lastfmLoadingMessages[currentMessageIndex]}</p>
+          <div className="w-48 h-1 bg-rock-gray rounded-full mx-auto overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-red-500 to-rock-gold rounded-full animate-pulse"></div>
+          </div>
+        </div>
+        
+        {/* Fun fact */}
+        <p className="text-gray-500 text-xs italic max-w-sm text-center">
+          🎵 Last.fm has tracked over 1 trillion songs since 2002!
+        </p>
+      </div>
+    );
+  };
+
   const loadSettings = async () => {
     try {
       const result = await window.electronAPI.getSettings();
@@ -610,7 +683,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
 
       {loading && (
         <div className="flex justify-center items-center py-12 flex-1 bg-gradient-to-b from-transparent via-rock-dark/20 to-transparent rounded-lg">
-          <LoadingSpinner message="🎤 Analyzing your collection with Last.fm..." />
+          <LastFMLoadingSpinner />
         </div>
       )}
 
