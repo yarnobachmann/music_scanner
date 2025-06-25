@@ -22,7 +22,6 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<Settings>({});
 
-
   const stats = {
     totalTracks: scanResult.length,
     totalArtists: new Set(scanResult.map(t => t.artist)).size,
@@ -34,6 +33,79 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
   }, []);
 
   // Remove auto-analysis - user will trigger manually
+
+  const LastFMLoadingSpinner: React.FC = () => {
+    const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+    
+    const lastfmLoadingMessages = [
+      "🎤 Analyzing your collection with Last.fm...",
+      "📊 Fetching top tracks and albums...",
+      "🔍 Comparing with global music trends...",
+      "🎯 Finding missing chart-toppers...",
+      "🌟 Discovering popular releases...",
+      "📈 Analyzing listening patterns...",
+      "🎵 Cross-referencing with Last.fm database...",
+      "🎸 Scanning for hidden classics...",
+      "💿 Checking album completeness...",
+      "🎧 Evaluating your music taste...",
+      "🔥 Hunting for trending tracks...",
+      "📻 Tuning into popular frequencies...",
+      "🎶 Harmonizing with the music community...",
+      "🎺 Jazz-ing up the Last.fm connection...",
+      "🥁 Beating through the charts...",
+      "🎹 Playing the keys to discovery..."
+    ];
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setCurrentMessageIndex((prev) => (prev + 1) % lastfmLoadingMessages.length);
+      }, 2500); // Slightly slower rotation for Last.fm messages
+
+      return () => clearInterval(interval);
+    }, [lastfmLoadingMessages.length]);
+
+    return (
+      <div className="flex flex-col items-center justify-center space-y-8 px-8">
+        {/* Logo */}
+        <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg overflow-hidden bg-white/10 backdrop-blur-sm">
+          <Image 
+            src="./icon.png" 
+            alt="Music Scan Pro" 
+            width={64} 
+            height={64} 
+            className="rounded-full"
+            priority
+            unoptimized
+          />
+        </div>
+        
+        {/* App Title */}
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-bold gradient-text">Last.fm Analysis</h2>
+          <p className="text-gray-400 text-sm">Connecting with the global music community</p>
+        </div>
+        
+        {/* Loading Spinner */}
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-rock-gray border-t-red-500 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-rock-gold rounded-full animate-spin animation-delay-150"></div>
+        </div>
+        
+        {/* Loading Message */}
+        <div className="text-center space-y-2 max-w-md">
+          <p className="text-white text-lg font-medium animate-pulse">{lastfmLoadingMessages[currentMessageIndex]}</p>
+          <div className="w-48 h-1 bg-rock-gray rounded-full mx-auto overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-red-500 to-rock-gold rounded-full animate-pulse"></div>
+          </div>
+        </div>
+        
+        {/* Fun fact */}
+        <p className="text-gray-500 text-xs italic max-w-sm text-center">
+          🎵 Last.fm has tracked over 1 trillion songs since 2002!
+        </p>
+      </div>
+    );
+  };
 
   const loadSettings = async () => {
     try {
@@ -229,42 +301,38 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
     window.open(lastfmUrl, '_blank');
   };
 
-
-
   const getTotalMissingTracks = () => {
-    if (!comparison) return 0;
-    return comparison.missing_tracks.length;
+    return comparison?.missing_tracks.length || 0;
   };
 
   const getTotalNewAlbums = () => {
-    if (!comparison) return 0;
-    return comparison.new_albums.length;
+    return comparison?.new_albums.length || 0;
   };
 
   const getTotalNewSongs = () => {
-    if (!comparison) return 0;
-    return comparison.new_songs.length;
+    return comparison?.new_songs.length || 0;
   };
 
   const renderOverview = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="music-card bg-rock-dark rounded-lg p-6">
-        <div className="flex items-center space-x-3 mb-4">
-          <Music className="text-rock-accent" size={24} />
-          <h3 className="text-lg font-semibold text-white">Your Collection</h3>
-        </div>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-gray-400">Tracks:</span>
-            <span className="text-white font-medium">{stats.totalTracks}</span>
+      {/* Collection Stats */}
+      <div className="music-card bg-rock-dark rounded-lg p-6 md:col-span-3">
+        <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+          <Music className="mr-2" size={24} />
+          Your Collection
+        </h3>
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div className="text-3xl font-bold text-rock-accent">{stats.totalTracks}</div>
+            <div className="text-gray-400">Tracks</div>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Artists:</span>
-            <span className="text-white font-medium">{stats.totalArtists}</span>
+          <div>
+            <div className="text-3xl font-bold text-rock-gold">{stats.totalArtists}</div>
+            <div className="text-gray-400">Artists</div>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Albums:</span>
-            <span className="text-white font-medium">{stats.totalAlbums}</span>
+          <div>
+            <div className="text-3xl font-bold text-green-500">{stats.totalAlbums}</div>
+            <div className="text-gray-400">Albums</div>
           </div>
         </div>
       </div>
@@ -276,14 +344,14 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
             className="interactive music-card bg-rock-dark rounded-lg p-6 hover:bg-rock-light transition-colors text-left w-full"
           >
             <div className="flex items-center space-x-3 mb-4">
-              <Search className="text-rock-gold" size={24} />
+              <Search className="text-rock-accent" size={24} />
               <h3 className="text-lg font-semibold text-white">Missing Tracks</h3>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-rock-gold mb-2">
+              <div className="text-3xl font-bold text-rock-accent mb-2">
                 {getTotalMissingTracks()}
               </div>
-              <p className="text-gray-400 text-sm">popular tracks you don't have</p>
+              <p className="text-gray-400 text-sm">popular tracks you don&apos;t have</p>
             </div>
           </button>
 
@@ -315,7 +383,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
               <div className="text-3xl font-bold text-purple-500 mb-2">
                 {getTotalNewSongs()}
               </div>
-              <p className="text-gray-400 text-sm">new singles & popular tracks</p>
+              <p className="text-gray-400 text-sm">new singles &amp; popular tracks</p>
             </div>
           </button>
         </>
@@ -330,7 +398,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
           <Search className="w-16 h-16 text-gray-500 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No Analysis Yet</h3>
           <p className="text-gray-400 mb-6">
-            Click "Analyze with Last.fm" to discover missing tracks from your collection
+            Click &quot;Analyze with Last.fm&quot; to discover missing tracks from your collection
           </p>
           <button
             onClick={handleLastFMAnalysis}
@@ -413,7 +481,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
           <Album className="w-16 h-16 text-gray-500 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No Analysis Yet</h3>
           <p className="text-gray-400 mb-6">
-            Click "Analyze with Last.fm" to discover new albums from your artists
+            Click &quot;Analyze with Last.fm&quot; to discover new albums from your artists
           </p>
           <button
             onClick={handleLastFMAnalysis}
@@ -439,7 +507,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
       <div className="space-y-6">
         {Object.keys(groupedAlbums).length === 0 && (
           <div className="text-center py-8">
-            <p className="text-gray-400">No new albums found. You're up to date!</p>
+            <p className="text-gray-400">No new albums found. You&apos;re up to date!</p>
           </div>
         )}
         {Object.entries(groupedAlbums).map(([artist, albums]) => (
@@ -487,7 +555,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
           <Music className="w-16 h-16 text-gray-500 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-white mb-2">No Analysis Yet</h3>
           <p className="text-gray-400 mb-6">
-            Click "Analyze with Last.fm" to discover new singles and popular tracks
+            Click &quot;Analyze with Last.fm&quot; to discover new singles and popular tracks
           </p>
           <button
             onClick={handleLastFMAnalysis}
@@ -615,7 +683,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
 
       {loading && (
         <div className="flex justify-center items-center py-12 flex-1 bg-gradient-to-b from-transparent via-rock-dark/20 to-transparent rounded-lg">
-          <LoadingSpinner message="🎤 Analyzing your collection with Last.fm..." />
+          <LastFMLoadingSpinner />
         </div>
       )}
 
