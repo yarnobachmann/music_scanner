@@ -13,12 +13,12 @@
     "lint": "next lint",
     "pack": "electron-builder",
     "dist": "npm run build && electron-builder",
-    "dist:win": "npm run build && npm run create-ico-safe && npm run create-banner && electron-builder --win",
+    "dist:win": "npm run build && npm run create-ico-safe && npm run create-banner && electron-builder --win --publish never",
     "create-ico-safe": "npm run create-ico || echo \"Warning: ICO creation failed, using existing icon\"",
     "create-ico": "node build/create-ico-from-custom.js",
     "create-banner": "node build/create-proper-banner.js",
-    "dist:mac": "npm run build && electron-builder --mac",
-    "dist:linux": "npm run build && npm run ensure-icon && electron-builder --linux",
+    "dist:mac": "npm run build && electron-builder --mac --publish never",
+    "dist:linux": "npm run build && npm run ensure-icon && electron-builder --linux --publish never",
     "ensure-icon": "npm run create-ico || echo \"Warning: ICO creation failed, using existing icon\"",
     "postinstall": "electron-builder install-app-deps",
     "test:build": "node scripts/build-test.js",
@@ -188,6 +188,11 @@
           "type": "file"
         }
       ]
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "yarnobachmann",
+      "repo": "music_scanner"
     }
   }
 }
