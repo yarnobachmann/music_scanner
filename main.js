@@ -159,6 +159,32 @@ function getPythonScriptPath(scriptName) {
   }
 }
 
+// Return the correct Python executable (embedded in production, system Python in development)
+function getPythonExecutable() {
+  const isDev = process.env.NODE_ENV === 'development';
+  if (isDev) {
+    return 'python'; // rely on developer machine Python
+  }
+
+  // Candidate locations for the embedded interpreter
+  const candidates = [
+    path.join(process.resourcesPath, 'python_embed', 'python.exe'),
+    path.join(__dirname, 'python_embed', 'python.exe'),
+    path.join(path.dirname(process.execPath), 'resources', 'python_embed', 'python.exe'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      console.log(`✅ Using embedded Python at: ${candidate}`);
+      return candidate;
+    }
+  }
+
+  // Fallback – hope a system Python exists
+  console.warn('⚠️ Embedded Python not found – falling back to system Python');
+  return 'python';
+}
+
 // IPC: Open folder dialog and run Python scan
 ipcMain.handle('select-folder-and-scan', async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -168,9 +194,10 @@ ipcMain.handle('select-folder-and-scan', async () => {
   const folder = filePaths[0];
   return new Promise((resolve) => {
     const scriptPath = getPythonScriptPath('scan_music.py');
-    console.log(`🐍 Running Python script: python ${scriptPath} "${folder}"`);
+    const pythonExe = getPythonExecutable();
+    console.log(`🐍 Running Python script: ${pythonExe} ${scriptPath} "${folder}"`);
     
-    const py = spawn('python', [scriptPath, folder]);
+    const py = spawn(pythonExe, [scriptPath, folder]);
     let data = '';
     let err = '';
     
@@ -206,13 +233,14 @@ ipcMain.handle('compareWithLastFM', async (event, scanResult, apiKey) => {
   fs.writeFileSync(tmpPath, JSON.stringify(scanResult, null, 2), 'utf-8');
   return new Promise((resolve) => {
     const scriptPath = getPythonScriptPath('lastfm_compare.py');
+    const pythonExe = getPythonExecutable();
     const args = [scriptPath, tmpPath];
     if (apiKey) {
       args.push(apiKey);
     }
     
-    console.log(`🐍 Running Last.fm comparison: python ${args.join(' ')}`);
-    const py = spawn('python', args);
+    console.log(`🐍 Running Last.fm comparison: ${pythonExe} ${args.join(' ')}`);
+    const py = spawn(pythonExe, args);
     let data = '';
     let err = '';
     

@@ -91,6 +91,7 @@
       "main.js",
       "preload.js",
       "*.py",
+      "python_embed/**/*",
       "icon.png",
       "build/icon.ico",
       "bin/icon-256.ico",
@@ -98,9 +99,14 @@
       "node_modules/**/*"
     ],
     "asarUnpack": [
-      "*.py"
+      "*.py",
+      "python_embed/**/*"
     ],
     "extraResources": [
+      {
+        "from": "python_embed",
+        "to": "python_embed"
+      },
       {
         "from": "scan_music.py",
         "to": "scan_music.py"
