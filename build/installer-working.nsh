@@ -16,23 +16,24 @@ Page custom ShortcutOptionsPage ShortcutOptionsPageLeave
 
 ; Install banner and icon assets
 Section -InstallAssets
-  DetailPrint ">>> USING CUSTOM NSIS SCRIPT <<<"
+  DetailPrint "Setting up Music Scan Pro..."
+  DetailPrint "Installing core application files..."
   ; Copy the icon file to installation directory for shortcuts
   IfFileExists "${BUILD_RESOURCES_DIR}\icon.ico" 0 skip_icon_copy
     File "/oname=$INSTDIR\icon.ico" "${BUILD_RESOURCES_DIR}\icon.ico"
-    DetailPrint "Installing custom icon from build resources..."
+    DetailPrint "Installing application icons..."
   skip_icon_copy:
   
   ; Copy PNG icon as well for runtime
   IfFileExists "$INSTDIR\icon.png" 0 skip_png_copy
-    DetailPrint "Using custom icon.png from app"
+    DetailPrint "Configuring application resources..."
     Goto done_icons
   skip_png_copy:
   
   ; Fallback - copy from build if no custom icon.png exists
   IfFileExists "${BUILD_RESOURCES_DIR}\..\icon.png" 0 done_icons
     File "/oname=$INSTDIR\icon.png" "${BUILD_RESOURCES_DIR}\..\icon.png"
-    DetailPrint "Installing fallback PNG icon..."
+    DetailPrint "Installing application resources..."
   
   done_icons:
 SectionEnd
@@ -87,18 +88,20 @@ Function .onInstSuccess
   ; Create desktop shortcut if requested
   ${If} $CreateDesktopShortcut == ${BST_CHECKED}
     CreateShortcut "$DESKTOP\Music Scan Pro.lnk" "$INSTDIR\Music Scan Pro.exe"
-    DetailPrint "Created desktop shortcut with exe icon"
+    DetailPrint "Creating desktop shortcut..."
   ${EndIf}
   
   ; Create start menu shortcuts if requested
   ${If} $CreateStartMenuShortcut == ${BST_CHECKED}
     CreateDirectory "$SMPROGRAMS\Music Scan Pro"
     CreateShortcut "$SMPROGRAMS\Music Scan Pro\Music Scan Pro.lnk" "$INSTDIR\Music Scan Pro.exe"
-    DetailPrint "Created start menu shortcut with exe icon"
+    DetailPrint "Creating Start Menu shortcuts..."
   ${EndIf}
   
   ; Refresh shell to update shortcuts
+  DetailPrint "Finalizing installation..."
   System::Call 'shell32.dll::SHChangeNotify(l, l, p, p) v (0x08000000, 0, 0, 0)'
+  DetailPrint "Installation completed successfully!"
   
   no_shortcuts:
   ; Show success message after installation is complete
