@@ -1,6 +1,6 @@
 {
   "name": "music-scan-pro",
-  "version": "1.0.11",
+  "version": "1.0.0",
   "description": "A native desktop music collection analyzer using Last.fm",
   "main": "main.js",
   "scripts": {
@@ -97,6 +97,9 @@
       "package.json",
       "node_modules/**/*"
     ],
+    "asarUnpack": [
+      "*.py"
+    ],
     "extraResources": [
       {
         "from": "scan_music.py",
@@ -142,7 +145,7 @@
       "include": "build/installer-working.nsh",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
-      "artifactName": "${productName}-${version}-Setup.${ext}",
+      "artifactName": "${productName}-Setup.${ext}",
       "installerSidebar": "build/installer-banner.bmp",
       "uninstallerSidebar": "build/installer-banner.bmp",
       "runAfterFinish": false,

@@ -123,11 +123,39 @@ app.on('window-all-closed', function () {
 // Helper function to get Python script path
 function getPythonScriptPath(scriptName) {
   const isDev = process.env.NODE_ENV === 'development';
+  
   if (isDev) {
     return path.join(__dirname, scriptName);
   } else {
-    // In production, Python files are in resources folder
-    return path.join(process.resourcesPath, scriptName);
+    // In production, try multiple possible locations
+    const possiblePaths = [
+      // Standard electron-builder resources location
+      path.join(process.resourcesPath, scriptName),
+      // Alternative resource paths
+      path.join(process.resourcesPath, 'app', scriptName),
+      path.join(process.resourcesPath, 'app.asar.unpacked', scriptName),
+      // Fallback to app directory
+      path.join(__dirname, scriptName),
+      // Try relative to executable
+      path.join(path.dirname(process.execPath), 'resources', scriptName),
+    ];
+    
+    for (const testPath of possiblePaths) {
+      if (fs.existsSync(testPath)) {
+        console.log(`✅ Found Python script at: ${testPath}`);
+        return testPath;
+      }
+    }
+    
+    // If none found, log all attempted paths and return the standard one
+    console.error('❌ Python script not found in any of these locations:');
+    possiblePaths.forEach(p => console.error(`  - ${p}`));
+    console.error(`Process resourcesPath: ${process.resourcesPath}`);
+    console.error(`__dirname: ${__dirname}`);
+    console.error(`process.execPath: ${process.execPath}`);
+    
+    // Return the most likely path anyway (first option)
+    return possiblePaths[0];
   }
 }
 
@@ -139,21 +167,35 @@ ipcMain.handle('select-folder-and-scan', async () => {
   if (canceled || !filePaths[0]) return { canceled: true };
   const folder = filePaths[0];
   return new Promise((resolve) => {
-    const py = spawn('python', [getPythonScriptPath('scan_music.py'), folder]);
+    const scriptPath = getPythonScriptPath('scan_music.py');
+    console.log(`🐍 Running Python script: python ${scriptPath} "${folder}"`);
+    
+    const py = spawn('python', [scriptPath, folder]);
     let data = '';
     let err = '';
+    
+    py.on('error', (error) => {
+      console.error('❌ Failed to spawn Python process:', error.message);
+      resolve({ error: `Failed to start Python: ${error.message}` });
+    });
+    
     py.stdout.on('data', (chunk) => { data += chunk; });
     py.stderr.on('data', (chunk) => { err += chunk; });
-    py.on('close', () => {
+    py.on('close', (code) => {
       data = data.trim();
-      if (err) {
-        resolve({ error: 'Python error: ' + err, raw: data });
+      console.log(`🐍 Python process exited with code: ${code}`);
+      
+      if (code !== 0 || err) {
+        console.error('❌ Python stderr:', err);
+        resolve({ error: 'Python error: ' + err, raw: data, exitCode: code });
         return;
       }
       try {
         resolve({ result: JSON.parse(data) });
-      } catch {
-        resolve({ error: 'Failed to parse scan result', raw: data });
+      } catch (parseError) {
+        console.error('❌ JSON parse error:', parseError.message);
+        console.error('❌ Raw Python output:', data);
+        resolve({ error: 'Failed to parse scan result', raw: data, parseError: parseError.message });
       }
     });
   });
@@ -163,28 +205,43 @@ ipcMain.handle('compareWithLastFM', async (event, scanResult, apiKey) => {
   const tmpPath = path.join(os.tmpdir(), `music_scan_${Date.now()}.json`);
   fs.writeFileSync(tmpPath, JSON.stringify(scanResult, null, 2), 'utf-8');
   return new Promise((resolve) => {
-    const args = [getPythonScriptPath('lastfm_compare.py'), tmpPath];
+    const scriptPath = getPythonScriptPath('lastfm_compare.py');
+    const args = [scriptPath, tmpPath];
     if (apiKey) {
       args.push(apiKey);
     }
+    
+    console.log(`🐍 Running Last.fm comparison: python ${args.join(' ')}`);
     const py = spawn('python', args);
     let data = '';
     let err = '';
+    
+    py.on('error', (error) => {
+      console.error('❌ Failed to spawn Python process:', error.message);
+      fs.unlinkSync(tmpPath);
+      resolve({ error: `Failed to start Python: ${error.message}` });
+    });
+    
     py.stdout.on('data', (chunk) => { data += chunk; });
     py.stderr.on('data', (chunk) => { err += chunk; });
-    py.on('close', () => {
+    py.on('close', (code) => {
       data = data.trim();
       fs.unlinkSync(tmpPath);
+      
+      console.log(`🐍 Last.fm Python process exited with code: ${code}`);
       
       try {
         const result = JSON.parse(data);
         resolve({ result: result });
         return;
       } catch (parseError) {
-        if (err) {
-          resolve({ error: 'Python error: ' + err, raw: data });
+        console.error('❌ JSON parse error:', parseError.message);
+        console.error('❌ Raw Python output:', data);
+        if (code !== 0 || err) {
+          console.error('❌ Python stderr:', err);
+          resolve({ error: 'Python error: ' + err, raw: data, exitCode: code });
         } else {
-          resolve({ error: 'Failed to parse compare result', raw: data });
+          resolve({ error: 'Failed to parse compare result', raw: data, parseError: parseError.message });
         }
       }
     });
