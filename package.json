@@ -25,6 +25,7 @@
     "ensure-icon": "npm run create-ico || echo \"Warning: ICO creation failed, using existing icon\"",
     "postinstall": "electron-builder install-app-deps",
     "test:build": "node scripts/build-test.js",
+    "setup-python": "node scripts/setup-python-embed.js",
     "release": "node scripts/release.js"
   },
   "keywords": [

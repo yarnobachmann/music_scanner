@@ -42,6 +42,9 @@ music-collection-report-*.pdf
 __pycache__/
 *.pyc
 
+# Embedded Python (downloaded during build)
+/python_embed/
+
 # Build outputs
 /dist/
 /dist-packager/
