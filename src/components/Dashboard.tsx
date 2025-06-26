@@ -21,6 +21,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
   const [activeTab, setActiveTab] = useState<'overview' | 'missing' | 'albums' | 'songs' | 'recommendations'>('overview');
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<Settings>({});
+  const [savedKey, setSavedKey] = useState(false);
 
   const stats = {
     totalTracks: scanResult.length,
@@ -119,6 +120,12 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
   };
 
   const handleLastFMAnalysis = async () => {
+    // Require API key before running analysis
+    if (!settings.lastfmApiKey) {
+      setError('Please configure your Last.fm API key in Settings.');
+      setShowSettings(true);
+      return;
+    }
     if (!window.electronAPI) {
       setError('Electron API not available');
       return;
@@ -144,6 +151,10 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
 
   const handleSettingsSave = (newSettings: Settings) => {
     setSettings(newSettings);
+    if (newSettings.lastfmApiKey) {
+      setSavedKey(true);
+      setTimeout(() => setSavedKey(false), 2000);
+    }
   };
 
   const handleExportToPDF = async () => {
@@ -1055,9 +1066,18 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
       </div>
 
       <div className="space-y-4 flex-shrink-0">
-        {settings.lastfmApiKey && (
-          <div className="bg-green-900/30 border border-green-500 rounded-lg p-3">
-            <p className="text-green-200 text-sm">✓ Using custom Last.fm API key</p>
+        {/* Prompt to configure API key */}
+        {!settings.lastfmApiKey && (
+          <div className="bg-yellow-900/30 border border-yellow-500 rounded-lg p-3 flex justify-between items-center">
+            <p className="text-yellow-200 text-sm">⚠️ No Last.fm API key configured. Please add one in Settings.</p>
+            <button onClick={() => setShowSettings(true)} className="text-yellow-100 hover:text-white underline text-sm">Open Settings</button>
+          </div>
+        )}
+        {/* Show checkmark after saving valid key */}
+        {settings.lastfmApiKey && savedKey && (
+          <div className="bg-green-900/30 border border-green-500 rounded-lg p-3 flex items-center space-x-2">
+            <span className="text-green-200 text-lg">✓</span>
+            <span className="text-green-200 text-sm">Last.fm API key saved!</span>
           </div>
         )}
 
@@ -1071,6 +1091,33 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
       {loading && (
         <div className="flex justify-center items-center py-12 flex-1 bg-gradient-to-b from-transparent via-rock-dark/20 to-transparent rounded-lg">
           <LastFMLoadingSpinner />
+        </div>
+      )}
+
+      {scanResult.length > 0 && !loading && !comparison && (
+        <div className="mb-6">
+          <div className="bg-blue-900/30 border border-blue-500 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0 md:space-x-4">
+            <div className="text-blue-200 text-sm flex items-center space-x-2">
+              <span>🎵 Scanning complete!</span>
+              {!settings.lastfmApiKey ? (
+                <span className="text-yellow-200">Add your Last.fm API key in Settings to enable analysis.</span>
+              ) : (
+                <span>Press <b>Analyze with Last.fm</b> to discover missing tracks, new albums, and more.</span>
+              )}
+            </div>
+            <div className="flex space-x-2">
+              {!settings.lastfmApiKey && (
+                <button onClick={() => setShowSettings(true)} className="text-yellow-100 hover:text-white underline text-sm">Open Settings</button>
+              )}
+              <button
+                onClick={handleLastFMAnalysis}
+                disabled={loading}
+                className="bg-rock-accent text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 text-sm"
+              >
+                Analyze with Last.fm
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

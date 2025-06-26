@@ -12,12 +12,14 @@ if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Last.fm API - much faster than MusicBrainz
-LASTFM_API_KEY = '8de1b85b41034d5ab4e2cdcea5f39195'  # Default API key
 LASTFM_API = 'https://ws.audioscrobbler.com/2.0/'
 
-# Check if custom API key is provided
-if len(sys.argv) >= 3:
-    LASTFM_API_KEY = sys.argv[2]
+# Require Last.fm API key as argument
+if len(sys.argv) < 3:
+    print('Error: Missing Last.fm API key. Please configure your API key in the application Settings.', file=sys.stderr)
+    sys.exit(1)
+
+LASTFM_API_KEY = sys.argv[2]
 
 # Simple cache
 artist_cache = {}

@@ -85,10 +85,10 @@ A powerful, rock-themed desktop music collection analyzer built with Electron, N
    - Includes collection stats, missing tracks, and new releases
    - Perfect for sharing or keeping track of your music discoveries
 
-### 5. **Custom Last.fm API (Optional)**
+### 5. **Custom Last.fm API (Required)**
    - Click "Settings" to add your own Last.fm API key
    - Get unlimited requests vs. the shared default key
-   - Register at [Last.fm API](https://www.last.fm/api/account/create)
+   - Register for your key at [Last.fm API](https://www.last.fm/api/account/create)
 
 ## 🏗️ Architecture
 
