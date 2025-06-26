@@ -176,12 +176,21 @@ function getPythonExecutable() {
   for (const candidate of candidates) {
     if (fs.existsSync(candidate)) {
       console.log(`✅ Using embedded Python at: ${candidate}`);
+      
+      // Set SSL certificate path for embedded Python
+      const pythonDir = path.dirname(candidate);
+      const certPath = path.join(pythonDir, 'Lib', 'site-packages', 'certifi', 'cacert.pem');
+      if (fs.existsSync(certPath)) {
+        process.env.SSL_CERT_FILE = certPath;
+        process.env.REQUESTS_CA_BUNDLE = certPath;
+        console.log(`✅ SSL certificates configured: ${certPath}`);
+      }
+      
       return candidate;
     }
   }
 
-  // Fallback – hope a system Python exists
-  console.warn('⚠️ Embedded Python not found – falling back to system Python');
+  console.log('⚠️ Embedded Python not found, falling back to system Python');
   return 'python';
 }
 
@@ -197,7 +206,7 @@ ipcMain.handle('select-folder-and-scan', async () => {
     const pythonExe = getPythonExecutable();
     console.log(`🐍 Running Python script: ${pythonExe} ${scriptPath} "${folder}"`);
     
-    const py = spawn(pythonExe, [scriptPath, folder]);
+    const py = spawn(pythonExe, [scriptPath, folder], { env: process.env });
     let data = '';
     let err = '';
     
@@ -240,7 +249,7 @@ ipcMain.handle('compareWithLastFM', async (event, scanResult, apiKey) => {
     }
     
     console.log(`🐍 Running Last.fm comparison: ${pythonExe} ${args.join(' ')}`);
-    const py = spawn(pythonExe, args);
+    const py = spawn(pythonExe, args, { env: process.env });
     let data = '';
     let err = '';
     
