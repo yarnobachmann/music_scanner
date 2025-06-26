@@ -159,7 +159,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
     // Main title with gradient effect (simulated with color)
     doc.setFontSize(24);
     doc.setTextColor(220, 38, 127); // Rock accent color
-    doc.text('🎸 MUSIC COLLECTION', pageWidth / 2, 25, { align: 'center' });
+    doc.text('MUSIC COLLECTION', pageWidth / 2, 25, { align: 'center' });
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
     doc.text('ANALYSIS REPORT', pageWidth / 2, 40, { align: 'center' });
@@ -186,47 +186,69 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
       .sort(([,a], [,b]) => b - a)
       .slice(0, 3);
 
-    // Epic Top Artists Section
+    // Top Artists Section with refined style
     if (topArtists.length > 0) {
+      // Section header
+      doc.setFillColor(255, 250, 250);
+      doc.roundedRect(15, yPosition - 5, pageWidth - 30, 30, 5, 5, 'F');
+      
+      // Add accent border
+      doc.setDrawColor(220, 38, 127);
+      doc.setLineWidth(3);
+      doc.line(20, yPosition - 2, 80, yPosition - 2);
+      
       doc.setFontSize(18);
       doc.setTextColor(220, 38, 127);
-      doc.text('🏆 TOP ARTISTS IN YOUR COLLECTION', 20, yPosition);
-      yPosition += 15;
+      doc.text('Top Artists in Your Collection', 25, yPosition + 12);
       
-      // Create artistic boxes for top artists
+      yPosition += 40;
+      
+      // Create elegant boxes for top artists
       topArtists.forEach((artist, index) => {
         const [artistName, trackCount] = artist;
-        const boxY = yPosition + (index * 25);
+        const boxY = yPosition + (index * 30);
         
-        // Artist box with gradient effect
-        doc.setFillColor(40, 40, 40);
-        doc.roundedRect(20, boxY - 5, pageWidth - 40, 20, 3, 3, 'F');
+        // Artist box with subtle styling
+        doc.setFillColor(250, 250, 250);
+        doc.roundedRect(20, boxY - 5, pageWidth - 40, 25, 5, 5, 'F');
         
-        // Rank badge
-        doc.setFillColor(220, 38, 127);
-        doc.circle(30, boxY + 5, 8, 'F');
-        doc.setFontSize(12);
+        // Subtle border
+        doc.setDrawColor(220, 220, 220);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(20, boxY - 5, pageWidth - 40, 25, 5, 5, 'S');
+        
+        // Rank badge with refined colors
+        const badgeColors = [
+          [220, 38, 127], // Pink for #1
+          [100, 100, 100], // Gray for #2
+          [139, 69, 19]    // Brown for #3
+        ];
+        
+        doc.setFillColor(badgeColors[index][0], badgeColors[index][1], badgeColors[index][2]);
+        doc.circle(35, boxY + 7.5, 10, 'F');
+        doc.setFontSize(14);
         doc.setTextColor(255, 255, 255);
-        doc.text(`${index + 1}`, 30, boxY + 8, { align: 'center' });
+        doc.text(`${index + 1}`, 35, boxY + 11, { align: 'center' });
         
         // Artist name
         doc.setFontSize(14);
-        doc.setTextColor(255, 255, 255);
-        doc.text(artistName.length > 35 ? artistName.substring(0, 35) + '...' : artistName, 45, boxY + 8);
+        doc.setTextColor(60, 60, 60);
+        doc.text(artistName.length > 35 ? artistName.substring(0, 35) + '...' : artistName, 55, boxY + 11);
         
-        // Track count with style
+        // Track count with refined styling
         doc.setFontSize(12);
-        doc.setTextColor(180, 180, 180);
-        doc.text(`${trackCount} tracks`, pageWidth - 30, boxY + 8, { align: 'right' });
+        doc.setTextColor(120, 120, 120);
+        doc.text(`${trackCount} tracks`, pageWidth - 30, boxY + 11, { align: 'right' });
         
-        // Add some rock elements
+        // Star for #1
         if (index === 0) {
-          doc.setTextColor(255, 215, 0); // Gold for #1
-          doc.text('👑', pageWidth - 50, boxY + 8);
+          doc.setFontSize(16);
+          doc.setTextColor(255, 215, 0);
+          doc.text('★', pageWidth - 55, boxY + 11);
         }
       });
       
-      yPosition += (topArtists.length * 25) + 20;
+      yPosition += (topArtists.length * 30) + 20;
     }
 
     // Collection Overview with rock styling
@@ -235,13 +257,13 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
     
     doc.setFontSize(16);
     doc.setTextColor(220, 38, 127);
-    doc.text('📊 COLLECTION OVERVIEW', 25, yPosition + 10);
+    doc.text('COLLECTION OVERVIEW', 25, yPosition + 10);
     
     doc.setFontSize(12);
     doc.setTextColor(255, 255, 255);
-    doc.text(`🎵 Total Tracks: ${stats.totalTracks.toLocaleString()}`, 30, yPosition + 25);
-    doc.text(`🎤 Total Artists: ${stats.totalArtists.toLocaleString()}`, 30, yPosition + 35);
-    doc.text(`💿 Total Albums: ${stats.totalAlbums.toLocaleString()}`, pageWidth - 30, yPosition + 25, { align: 'right' });
+    doc.text(`Total Tracks: ${stats.totalTracks.toLocaleString()}`, 30, yPosition + 25);
+    doc.text(`Total Artists: ${stats.totalArtists.toLocaleString()}`, 30, yPosition + 35);
+    doc.text(`Total Albums: ${stats.totalAlbums.toLocaleString()}`, pageWidth - 30, yPosition + 25, { align: 'right' });
     
     yPosition += 60;
 
@@ -253,17 +275,22 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
           yPosition = 30;
         }
 
-        // Section header with rock style
-        doc.setFillColor(50, 50, 50);
-        doc.roundedRect(15, yPosition - 5, pageWidth - 30, 25, 3, 3, 'F');
+        // Section header with refined style
+        doc.setFillColor(245, 245, 245);
+        doc.roundedRect(15, yPosition - 5, pageWidth - 30, 30, 5, 5, 'F');
         
-        doc.setFontSize(18);
+        // Add accent border
+        doc.setDrawColor(220, 38, 127);
+        doc.setLineWidth(2);
+        doc.line(20, yPosition - 2, 60, yPosition - 2);
+        
+        doc.setFontSize(16);
         doc.setTextColor(220, 38, 127);
-        doc.text('🔍 MISSING TRACKS TO ROCK YOUR COLLECTION', 25, yPosition + 10);
+        doc.text('Missing Tracks to Complete Your Collection', 25, yPosition + 8);
         
-        doc.setFontSize(11);
-        doc.setTextColor(180, 180, 180);
-        doc.text(`${comparison.missing_tracks.length} epic tracks waiting to be discovered`, 25, yPosition + 18);
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`${comparison.missing_tracks.length} popular tracks you might want to add`, 25, yPosition + 18);
         
         yPosition += 35;
 
@@ -275,21 +302,23 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
         ]);
 
         autoTable(doc, {
-          head: [['🎤 Artist', '💿 Album', '🎵 Track', '📅 Year']],
+          head: [['Artist', 'Album', 'Track', 'Year']],
           body: missingTracksData,
           startY: yPosition,
           styles: { 
-            fontSize: 9,
-            textColor: [255, 255, 255],
-            fillColor: [35, 35, 35],
-            lineColor: [220, 38, 127],
-            lineWidth: 0.5
+            fontSize: 10,
+            textColor: [50, 50, 50],
+            fillColor: [248, 248, 248],
+            lineColor: [200, 200, 200],
+            lineWidth: 0.3,
+            cellPadding: 4
           },
           headStyles: { 
             fillColor: [220, 38, 127],
             textColor: [255, 255, 255],
-            fontSize: 10,
-            fontStyle: 'bold'
+            fontSize: 11,
+            fontStyle: 'bold',
+            halign: 'center'
           },
 
           margin: { left: 20, right: 20 }
@@ -305,16 +334,21 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
           yPosition = 30;
         }
 
-        // Section header with rock style
-        doc.setFillColor(50, 50, 50);
-        doc.roundedRect(15, yPosition - 5, pageWidth - 30, 25, 3, 3, 'F');
+        // Section header with refined style
+        doc.setFillColor(248, 255, 248);
+        doc.roundedRect(15, yPosition - 5, pageWidth - 30, 30, 5, 5, 'F');
         
-        doc.setFontSize(18);
-        doc.setTextColor(34, 197, 94); // Green for new content
-        doc.text('🆕 NEW ALBUMS TO AMPLIFY YOUR LIBRARY', 25, yPosition + 10);
+        // Add accent border
+        doc.setDrawColor(34, 197, 94);
+        doc.setLineWidth(2);
+        doc.line(20, yPosition - 2, 60, yPosition - 2);
         
-        doc.setFontSize(11);
-        doc.setTextColor(180, 180, 180);
+        doc.setFontSize(16);
+        doc.setTextColor(34, 197, 94);
+        doc.text('New Albums to Expand Your Library', 25, yPosition + 8);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
         doc.text(`${comparison.new_albums.length} fresh albums from your favorite artists`, 25, yPosition + 18);
         
         yPosition += 35;
@@ -327,21 +361,23 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
         ]);
 
         autoTable(doc, {
-          head: [['🎤 Artist', '💿 Album', '🔥 Plays', '📅 Year']],
+          head: [['Artist', 'Album', 'Plays', 'Year']],
           body: newAlbumsData,
           startY: yPosition,
           styles: { 
-            fontSize: 9,
-            textColor: [255, 255, 255],
-            fillColor: [35, 35, 35],
-            lineColor: [34, 197, 94],
-            lineWidth: 0.5
+            fontSize: 10,
+            textColor: [50, 50, 50],
+            fillColor: [248, 255, 248],
+            lineColor: [200, 220, 200],
+            lineWidth: 0.3,
+            cellPadding: 4
           },
           headStyles: { 
             fillColor: [34, 197, 94],
             textColor: [255, 255, 255],
-            fontSize: 10,
-            fontStyle: 'bold'
+            fontSize: 11,
+            fontStyle: 'bold',
+            halign: 'center'
           },
           margin: { left: 20, right: 20 }
         });
@@ -356,17 +392,22 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
           yPosition = 30;
         }
 
-        // Section header with rock style
-        doc.setFillColor(50, 50, 50);
-        doc.roundedRect(15, yPosition - 5, pageWidth - 30, 25, 3, 3, 'F');
+        // Section header with refined style  
+        doc.setFillColor(252, 248, 255);
+        doc.roundedRect(15, yPosition - 5, pageWidth - 30, 30, 5, 5, 'F');
         
-        doc.setFontSize(18);
-        doc.setTextColor(139, 92, 246); // Purple for singles
-        doc.text('🎶 HOT SINGLES & TRENDING TRACKS', 25, yPosition + 10);
+        // Add accent border
+        doc.setDrawColor(139, 92, 246);
+        doc.setLineWidth(2);
+        doc.line(20, yPosition - 2, 60, yPosition - 2);
         
-        doc.setFontSize(11);
-        doc.setTextColor(180, 180, 180);
-        doc.text(`${comparison.new_songs.length} blazing hot tracks to add to your playlist`, 25, yPosition + 18);
+        doc.setFontSize(16);
+        doc.setTextColor(139, 92, 246);
+        doc.text('Popular Singles & Trending Tracks', 25, yPosition + 8);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`${comparison.new_songs.length} trending tracks to add to your collection`, 25, yPosition + 18);
         
         yPosition += 35;
 
@@ -378,21 +419,23 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
         ]);
 
         autoTable(doc, {
-          head: [['🎤 Artist', '🎵 Track', '🔥 Plays', '📅 Year']],
+          head: [['Artist', 'Track', 'Plays', 'Year']],
           body: newSongsData,
           startY: yPosition,
           styles: { 
-            fontSize: 9,
-            textColor: [255, 255, 255],
-            fillColor: [35, 35, 35],
-            lineColor: [139, 92, 246],
-            lineWidth: 0.5
+            fontSize: 10,
+            textColor: [50, 50, 50],
+            fillColor: [252, 248, 255],
+            lineColor: [220, 200, 240],
+            lineWidth: 0.3,
+            cellPadding: 4
           },
           headStyles: { 
             fillColor: [139, 92, 246],
             textColor: [255, 255, 255],
-            fontSize: 10,
-            fontStyle: 'bold'
+            fontSize: 11,
+            fontStyle: 'bold',
+            halign: 'center'
           },
           margin: { left: 20, right: 20 }
         });
@@ -409,15 +452,15 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
       
       doc.setFontSize(22);
       doc.setTextColor(220, 38, 127);
-      doc.text('🎸 ROCK ON! ANALYSIS COMPLETE', pageWidth / 2, 30, { align: 'center' });
+      doc.text('ANALYSIS COMPLETE', pageWidth / 2, 30, { align: 'center' });
       
       yPosition = 70;
       
-      // Epic summary boxes
+      // Summary boxes
       const summaryItems = [
-        { icon: '🔍', label: 'Missing Tracks Found', value: comparison.missing_tracks.length, color: [220, 38, 127] },
-        { icon: '🆕', label: 'New Albums Discovered', value: comparison.new_albums.length, color: [34, 197, 94] },
-        { icon: '🎶', label: 'Hot Singles Identified', value: comparison.new_songs.length, color: [139, 92, 246] }
+        { icon: 'M', label: 'Missing Tracks Found', value: comparison.missing_tracks.length, color: [220, 38, 127] },
+        { icon: 'A', label: 'New Albums Discovered', value: comparison.new_albums.length, color: [34, 197, 94] },
+        { icon: 'S', label: 'Hot Singles Identified', value: comparison.new_songs.length, color: [139, 92, 246] }
       ];
       
       summaryItems.forEach((item, index) => {
@@ -430,9 +473,9 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
         // Icon circle
         doc.setFillColor(item.color[0], item.color[1], item.color[2]);
         doc.circle(35, boxY + 10, 12, 'F');
-        doc.setFontSize(16);
+        doc.setFontSize(14);
         doc.setTextColor(255, 255, 255);
-        doc.text(item.icon, 35, boxY + 15, { align: 'center' });
+        doc.text(item.icon, 35, boxY + 14, { align: 'center' });
         
         // Label and value
         doc.setFontSize(14);
@@ -444,15 +487,15 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
         doc.text(item.value.toLocaleString(), pageWidth - 30, boxY + 12, { align: 'right' });
       });
       
-      // Epic footer
+      // Footer
       yPosition += 150;
       doc.setFontSize(14);
       doc.setTextColor(180, 180, 180);
-      doc.text('Keep rocking and expanding your music collection! 🤘', pageWidth / 2, yPosition, { align: 'center' });
+      doc.text('Keep expanding your music collection!', pageWidth / 2, yPosition, { align: 'center' });
       
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.text('Generated by Music Scan Pro - Your Rock Music Analysis Companion', pageWidth / 2, pageHeight - 20, { align: 'center' });
+      doc.text('Generated by Music Scan Pro - Music Collection Analysis Tool', pageWidth / 2, pageHeight - 20, { align: 'center' });
     } else {
       // No analysis yet - with style
       doc.setFillColor(60, 60, 60);
@@ -460,7 +503,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
       
       doc.setFontSize(18);
       doc.setTextColor(220, 38, 127);
-      doc.text('🎵 Ready to Rock Your Analysis?', pageWidth / 2, yPosition + 30, { align: 'center' });
+      doc.text('Ready to Analyze Your Collection?', pageWidth / 2, yPosition + 30, { align: 'center' });
       
       doc.setFontSize(12);
       doc.setTextColor(180, 180, 180);
@@ -468,8 +511,8 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
       doc.text('Run "Analyze with Last.fm" to discover missing tracks and new releases!', pageWidth / 2, yPosition + 60, { align: 'center' });
     }
 
-    // Save the PDF with epic filename
-    const fileName = `🎸-music-collection-analysis-${new Date().toISOString().split('T')[0]}.pdf`;
+    // Save the PDF with professional filename
+    const fileName = `Music-Collection-Analysis-${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
   };
 
