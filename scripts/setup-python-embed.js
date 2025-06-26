@@ -107,7 +107,7 @@ async function setupEmbeddedPython() {
     
     // Test installation
     console.log('🧪 Testing installation...');
-    execSync(`"${pythonExe}" -c "import mutagen; import requests; print('✅ All modules imported successfully')"`, {
+    execSync(`"${pythonExe}" -c "import mutagen; import requests; print('All modules imported successfully')"`, {
       stdio: 'inherit'
     });
     
