@@ -146,145 +146,330 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
     setSettings(newSettings);
   };
 
-  const handleExportToPDF = () => {
+  const handleExportToPDF = async () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
-    let yPosition = 20;
+    const pageHeight = doc.internal.pageSize.height;
+    let yPosition = 30;
 
-    // Title
-    doc.setFontSize(20);
+    // Epic Header with rock styling
+    doc.setFillColor(30, 30, 30); // Dark background
+    doc.rect(0, 0, pageWidth, 60, 'F');
+    
+    // Main title with gradient effect (simulated with color)
+    doc.setFontSize(24);
     doc.setTextColor(220, 38, 127); // Rock accent color
-    doc.text('Music Collection Analysis Report', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15;
-
-    // Date
+    doc.text('🎸 MUSIC COLLECTION', pageWidth / 2, 25, { align: 'center' });
+    doc.setFontSize(20);
+    doc.setTextColor(255, 255, 255);
+    doc.text('ANALYSIS REPORT', pageWidth / 2, 40, { align: 'center' });
+    
+    // Date with style
     doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated on ${new Date().toLocaleDateString()}`, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 20;
+    doc.setTextColor(180, 180, 180);
+    doc.text(`Generated on ${new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })}`, pageWidth / 2, 52, { align: 'center' });
+    
+    yPosition = 80;
 
-    // Collection Overview
+    // Get top 3 artists by track count
+    const artistTrackCounts = scanResult.reduce((acc, track) => {
+      acc[track.artist] = (acc[track.artist] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const topArtists = Object.entries(artistTrackCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 3);
+
+    // Epic Top Artists Section
+    if (topArtists.length > 0) {
+      doc.setFontSize(18);
+      doc.setTextColor(220, 38, 127);
+      doc.text('🏆 TOP ARTISTS IN YOUR COLLECTION', 20, yPosition);
+      yPosition += 15;
+      
+      // Create artistic boxes for top artists
+      topArtists.forEach((artist, index) => {
+        const [artistName, trackCount] = artist;
+        const boxY = yPosition + (index * 25);
+        
+        // Artist box with gradient effect
+        doc.setFillColor(40, 40, 40);
+        doc.roundedRect(20, boxY - 5, pageWidth - 40, 20, 3, 3, 'F');
+        
+        // Rank badge
+        doc.setFillColor(220, 38, 127);
+        doc.circle(30, boxY + 5, 8, 'F');
+        doc.setFontSize(12);
+        doc.setTextColor(255, 255, 255);
+        doc.text(`${index + 1}`, 30, boxY + 8, { align: 'center' });
+        
+        // Artist name
+        doc.setFontSize(14);
+        doc.setTextColor(255, 255, 255);
+        doc.text(artistName.length > 35 ? artistName.substring(0, 35) + '...' : artistName, 45, boxY + 8);
+        
+        // Track count with style
+        doc.setFontSize(12);
+        doc.setTextColor(180, 180, 180);
+        doc.text(`${trackCount} tracks`, pageWidth - 30, boxY + 8, { align: 'right' });
+        
+        // Add some rock elements
+        if (index === 0) {
+          doc.setTextColor(255, 215, 0); // Gold for #1
+          doc.text('👑', pageWidth - 50, boxY + 8);
+        }
+      });
+      
+      yPosition += (topArtists.length * 25) + 20;
+    }
+
+    // Collection Overview with rock styling
+    doc.setFillColor(45, 45, 45);
+    doc.roundedRect(15, yPosition - 5, pageWidth - 30, 45, 5, 5, 'F');
+    
     doc.setFontSize(16);
-    doc.setTextColor(0, 0, 0);
-    doc.text('Collection Overview', 20, yPosition);
-    yPosition += 10;
-
+    doc.setTextColor(220, 38, 127);
+    doc.text('📊 COLLECTION OVERVIEW', 25, yPosition + 10);
+    
     doc.setFontSize(12);
-    doc.text(`Total Tracks: ${stats.totalTracks}`, 25, yPosition);
-    yPosition += 7;
-    doc.text(`Total Artists: ${stats.totalArtists}`, 25, yPosition);
-    yPosition += 7;
-    doc.text(`Total Albums: ${stats.totalAlbums}`, 25, yPosition);
-    yPosition += 20;
+    doc.setTextColor(255, 255, 255);
+    doc.text(`🎵 Total Tracks: ${stats.totalTracks.toLocaleString()}`, 30, yPosition + 25);
+    doc.text(`🎤 Total Artists: ${stats.totalArtists.toLocaleString()}`, 30, yPosition + 35);
+    doc.text(`💿 Total Albums: ${stats.totalAlbums.toLocaleString()}`, pageWidth - 30, yPosition + 25, { align: 'right' });
+    
+    yPosition += 60;
 
     if (comparison) {
-      // Missing Tracks
+      // Missing Tracks with epic styling
       if (comparison.missing_tracks.length > 0) {
-        doc.setFontSize(16);
-        doc.text('Missing Tracks', 20, yPosition);
-        yPosition += 10;
+        if (yPosition > 220) {
+          doc.addPage();
+          yPosition = 30;
+        }
+
+        // Section header with rock style
+        doc.setFillColor(50, 50, 50);
+        doc.roundedRect(15, yPosition - 5, pageWidth - 30, 25, 3, 3, 'F');
+        
+        doc.setFontSize(18);
+        doc.setTextColor(220, 38, 127);
+        doc.text('🔍 MISSING TRACKS TO ROCK YOUR COLLECTION', 25, yPosition + 10);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(180, 180, 180);
+        doc.text(`${comparison.missing_tracks.length} epic tracks waiting to be discovered`, 25, yPosition + 18);
+        
+        yPosition += 35;
 
         const missingTracksData = comparison.missing_tracks.slice(0, 50).map(track => [
-          track.artist,
-          track.album,
-          track.track,
+          track.artist.length > 25 ? track.artist.substring(0, 25) + '...' : track.artist,
+          track.album.length > 30 ? track.album.substring(0, 30) + '...' : track.album,
+          track.track.length > 35 ? track.track.substring(0, 35) + '...' : track.track,
           track.year || 'Unknown'
         ]);
 
         autoTable(doc, {
-          head: [['Artist', 'Album', 'Track', 'Year']],
+          head: [['🎤 Artist', '💿 Album', '🎵 Track', '📅 Year']],
           body: missingTracksData,
           startY: yPosition,
-          styles: { fontSize: 9 },
-          headStyles: { fillColor: [220, 38, 127] },
+          styles: { 
+            fontSize: 9,
+            textColor: [255, 255, 255],
+            fillColor: [35, 35, 35],
+            lineColor: [220, 38, 127],
+            lineWidth: 0.5
+          },
+          headStyles: { 
+            fillColor: [220, 38, 127],
+            textColor: [255, 255, 255],
+            fontSize: 10,
+            fontStyle: 'bold'
+          },
+
           margin: { left: 20, right: 20 }
         });
 
         yPosition = (doc as any).lastAutoTable.finalY + 15;
       }
 
-      // New Albums
+      // New Albums with epic styling
       if (comparison.new_albums.length > 0) {
-        if (yPosition > 250) {
+        if (yPosition > 220) {
           doc.addPage();
-          yPosition = 20;
+          yPosition = 30;
         }
 
-        doc.setFontSize(16);
-        doc.text('New Albums to Explore', 20, yPosition);
-        yPosition += 10;
+        // Section header with rock style
+        doc.setFillColor(50, 50, 50);
+        doc.roundedRect(15, yPosition - 5, pageWidth - 30, 25, 3, 3, 'F');
+        
+        doc.setFontSize(18);
+        doc.setTextColor(34, 197, 94); // Green for new content
+        doc.text('🆕 NEW ALBUMS TO AMPLIFY YOUR LIBRARY', 25, yPosition + 10);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(180, 180, 180);
+        doc.text(`${comparison.new_albums.length} fresh albums from your favorite artists`, 25, yPosition + 18);
+        
+        yPosition += 35;
 
         const newAlbumsData = comparison.new_albums.slice(0, 30).map(album => [
-          album.artist,
-          album.album,
+          album.artist.length > 25 ? album.artist.substring(0, 25) + '...' : album.artist,
+          album.album.length > 30 ? album.album.substring(0, 30) + '...' : album.album,
           album.playcount.toLocaleString(),
           album.year || 'Unknown'
         ]);
 
         autoTable(doc, {
-          head: [['Artist', 'Album', 'Play Count', 'Year']],
+          head: [['🎤 Artist', '💿 Album', '🔥 Plays', '📅 Year']],
           body: newAlbumsData,
           startY: yPosition,
-          styles: { fontSize: 9 },
-          headStyles: { fillColor: [34, 197, 94] },
+          styles: { 
+            fontSize: 9,
+            textColor: [255, 255, 255],
+            fillColor: [35, 35, 35],
+            lineColor: [34, 197, 94],
+            lineWidth: 0.5
+          },
+          headStyles: { 
+            fillColor: [34, 197, 94],
+            textColor: [255, 255, 255],
+            fontSize: 10,
+            fontStyle: 'bold'
+          },
           margin: { left: 20, right: 20 }
         });
 
         yPosition = (doc as any).lastAutoTable.finalY + 15;
       }
 
-      // New Songs
+      // New Songs with epic styling
       if (comparison.new_songs.length > 0) {
-        if (yPosition > 250) {
+        if (yPosition > 220) {
           doc.addPage();
-          yPosition = 20;
+          yPosition = 30;
         }
 
-        doc.setFontSize(16);
-        doc.text('New Songs & Singles', 20, yPosition);
-        yPosition += 10;
+        // Section header with rock style
+        doc.setFillColor(50, 50, 50);
+        doc.roundedRect(15, yPosition - 5, pageWidth - 30, 25, 3, 3, 'F');
+        
+        doc.setFontSize(18);
+        doc.setTextColor(139, 92, 246); // Purple for singles
+        doc.text('🎶 HOT SINGLES & TRENDING TRACKS', 25, yPosition + 10);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(180, 180, 180);
+        doc.text(`${comparison.new_songs.length} blazing hot tracks to add to your playlist`, 25, yPosition + 18);
+        
+        yPosition += 35;
 
         const newSongsData = comparison.new_songs.slice(0, 30).map(song => [
-          song.artist,
-          song.track,
+          song.artist.length > 25 ? song.artist.substring(0, 25) + '...' : song.artist,
+          song.track.length > 35 ? song.track.substring(0, 35) + '...' : song.track,
           song.playcount.toLocaleString(),
           song.year || 'Unknown'
         ]);
 
         autoTable(doc, {
-          head: [['Artist', 'Track', 'Play Count', 'Year']],
+          head: [['🎤 Artist', '🎵 Track', '🔥 Plays', '📅 Year']],
           body: newSongsData,
           startY: yPosition,
-          styles: { fontSize: 9 },
-          headStyles: { fillColor: [139, 92, 246] },
+          styles: { 
+            fontSize: 9,
+            textColor: [255, 255, 255],
+            fillColor: [35, 35, 35],
+            lineColor: [139, 92, 246],
+            lineWidth: 0.5
+          },
+          headStyles: { 
+            fillColor: [139, 92, 246],
+            textColor: [255, 255, 255],
+            fontSize: 10,
+            fontStyle: 'bold'
+          },
           margin: { left: 20, right: 20 }
         });
+        
+        yPosition = (doc as any).lastAutoTable.finalY + 15;
       }
 
-      // Summary footer
+      // Epic Summary Page
       doc.addPage();
-      doc.setFontSize(14);
-      doc.text('Analysis Summary', 20, 30);
       
-      doc.setFontSize(12);
-      doc.text(`• Found ${comparison.missing_tracks.length} missing tracks from your artists`, 25, 50);
-      doc.text(`• Discovered ${comparison.new_albums.length} new albums to explore`, 25, 65);
-      doc.text(`• Identified ${comparison.new_songs.length} new singles and popular tracks`, 25, 80);
+      // Header for summary page
+      doc.setFillColor(30, 30, 30);
+      doc.rect(0, 0, pageWidth, 50, 'F');
+      
+      doc.setFontSize(22);
+      doc.setTextColor(220, 38, 127);
+      doc.text('🎸 ROCK ON! ANALYSIS COMPLETE', pageWidth / 2, 30, { align: 'center' });
+      
+      yPosition = 70;
+      
+      // Epic summary boxes
+      const summaryItems = [
+        { icon: '🔍', label: 'Missing Tracks Found', value: comparison.missing_tracks.length, color: [220, 38, 127] },
+        { icon: '🆕', label: 'New Albums Discovered', value: comparison.new_albums.length, color: [34, 197, 94] },
+        { icon: '🎶', label: 'Hot Singles Identified', value: comparison.new_songs.length, color: [139, 92, 246] }
+      ];
+      
+      summaryItems.forEach((item, index) => {
+        const boxY = yPosition + (index * 40);
+        
+        // Summary box
+        doc.setFillColor(40, 40, 40);
+        doc.roundedRect(20, boxY - 5, pageWidth - 40, 30, 5, 5, 'F');
+        
+        // Icon circle
+        doc.setFillColor(item.color[0], item.color[1], item.color[2]);
+        doc.circle(35, boxY + 10, 12, 'F');
+        doc.setFontSize(16);
+        doc.setTextColor(255, 255, 255);
+        doc.text(item.icon, 35, boxY + 15, { align: 'center' });
+        
+        // Label and value
+        doc.setFontSize(14);
+        doc.setTextColor(255, 255, 255);
+        doc.text(item.label, 55, boxY + 8);
+        
+        doc.setFontSize(18);
+        doc.setTextColor(item.color[0], item.color[1], item.color[2]);
+        doc.text(item.value.toLocaleString(), pageWidth - 30, boxY + 12, { align: 'right' });
+      });
+      
+      // Epic footer
+      yPosition += 150;
+      doc.setFontSize(14);
+      doc.setTextColor(180, 180, 180);
+      doc.text('Keep rocking and expanding your music collection! 🤘', pageWidth / 2, yPosition, { align: 'center' });
       
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.text('Generated by Music Scan Pro', pageWidth / 2, 280, { align: 'center' });
+      doc.text('Generated by Music Scan Pro - Your Rock Music Analysis Companion', pageWidth / 2, pageHeight - 20, { align: 'center' });
     } else {
-      // No analysis yet
-      doc.setFontSize(14);
-      doc.text('No Last.fm analysis performed yet.', 20, yPosition);
-      yPosition += 10;
+      // No analysis yet - with style
+      doc.setFillColor(60, 60, 60);
+      doc.roundedRect(15, yPosition, pageWidth - 30, 80, 10, 10, 'F');
+      
+      doc.setFontSize(18);
+      doc.setTextColor(220, 38, 127);
+      doc.text('🎵 Ready to Rock Your Analysis?', pageWidth / 2, yPosition + 30, { align: 'center' });
+      
       doc.setFontSize(12);
-      doc.text('Run "Analyze with Last.fm" to discover missing tracks and new releases.', 20, yPosition);
+      doc.setTextColor(180, 180, 180);
+      doc.text('No Last.fm analysis performed yet.', pageWidth / 2, yPosition + 45, { align: 'center' });
+      doc.text('Run "Analyze with Last.fm" to discover missing tracks and new releases!', pageWidth / 2, yPosition + 60, { align: 'center' });
     }
 
-    // Save the PDF
-    const fileName = `music-collection-report-${new Date().toISOString().split('T')[0]}.pdf`;
+    // Save the PDF with epic filename
+    const fileName = `🎸-music-collection-analysis-${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
   };
 

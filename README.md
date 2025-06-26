@@ -1,6 +1,17 @@
 # 🎸 Music Scan Pro
 
-A powerful, rock-themed desktop music collection analyzer built with Electron, Next.js, and Last.fm integration. Discover missing tracks, find new releases, and keep your music collection legendary!
+A powerful, rock-themed desktop music collection analyzer built with Electron, Next.js, and Last.fm integration. Scans **all music genres** with a cool rock aesthetic - discover missing tracks, find new releases, and keep your music collection legendary!
+
+## 📦 Download
+
+[![Latest Release](https://img.shields.io/github/v/release/yarnobachmann/music_scanner?style=for-the-badge&logo=github)](https://github.com/yarnobachmann/music_scanner/releases/latest)
+
+**Download the latest version:**
+- 🪟 **Windows**: `Music Scan Pro-Setup.exe`
+- 🍎 **macOS**: `Music Scan Pro.dmg` 
+- 🐧 **Linux**: `Music Scan Pro.AppImage` or `.deb`
+
+> 📝 **Note**: Music Scan Pro analyzes music from **all genres** - rock, pop, electronic, classical, jazz, and more! The rock theme is purely aesthetic to give the app a cool, professional look.
 
 ![Music Scan Pro](https://img.shields.io/badge/Music-Scan%20Pro-DC267F?style=for-the-badge&logo=music&logoColor=white)
 ![Electron](https://img.shields.io/badge/Electron-191970?style=for-the-badge&logo=Electron&logoColor=white)
@@ -9,11 +20,11 @@ A powerful, rock-themed desktop music collection analyzer built with Electron, N
 
 ## ✨ Features
 
-- **🔍 Smart Music Analysis**: Scan your local MP3 collection and analyze with Last.fm
+- **🔍 Smart Music Analysis**: Scan your local MP3 collection (all genres) and analyze with Last.fm
 - **📋 Missing Track Detection**: Find popular tracks you're missing from your favorite artists
 - **🆕 New Release Discovery**: Discover latest albums and singles from artists in your collection
 - **📊 Visual Dashboard**: Beautiful rock-themed interface with comprehensive statistics
-- **📄 PDF Export**: Generate professional reports with missing tracks and new releases
+- **📄 Epic PDF Reports**: Generate professional reports with top artists, missing tracks, and new releases
 - **⚙️ Custom API Keys**: Use your own Last.fm API key for unlimited requests
 - **🖥️ Native Desktop App**: Full offline functionality with modern Electron interface
 - **🎨 Rock-Themed UI**: Dark, professional design with custom scrollbars and animations
