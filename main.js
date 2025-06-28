@@ -17,9 +17,10 @@ function createWindow() {
     if (process.platform === 'win32') {
       // Try multiple icon locations
       const possiblePaths = [
+        path.join(__dirname, 'build', 'icon.ico'),
+        path.join(__dirname, 'bin', 'icon-256.ico'),
         path.join(__dirname, 'icon.ico'),
         path.join(process.resourcesPath, 'icon.ico'),
-        path.join(__dirname, 'build', 'icon.ico'),
         path.join(__dirname, 'icon.png')
       ];
       
@@ -38,6 +39,8 @@ function createWindow() {
     if (iconPath && fs.existsSync(iconPath)) {
       appIcon = nativeImage.createFromPath(iconPath);
       console.log(`✅ Custom icon loaded from ${iconPath}`);
+      console.log(`Icon size: ${appIcon.getSize().width}x${appIcon.getSize().height}`);
+      console.log(`Icon is empty: ${appIcon.isEmpty()}`);
     } else {
       console.log('❌ No icon found, using default');
     }
@@ -47,6 +50,11 @@ function createWindow() {
   
   if (!appIcon || appIcon.isEmpty()) {
     console.log('⚠️ No icon available, using default');
+  }
+
+  // Set app user model ID BEFORE creating window for better Windows taskbar integration
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.musicscanpro.app');
   }
 
   mainWindow = new BrowserWindow({
@@ -69,15 +77,22 @@ function createWindow() {
   // Remove menu bar
   mainWindow.setMenu(null);
 
-  // Set app icon explicitly
+  // Set app icon explicitly for Windows taskbar
   if (appIcon && !appIcon.isEmpty()) {
-    app.setAppUserModelId('com.musicscanpro.app');
     mainWindow.setIcon(appIcon);
+    // Also set overlay icon for Windows taskbar
+    if (process.platform === 'win32') {
+      mainWindow.setOverlayIcon(appIcon, 'Music Scan Pro');
+    }
   }
 
   // Show window when ready to prevent white flash
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    // Set icon again after window is shown (sometimes needed for Windows)
+    if (appIcon && !appIcon.isEmpty() && process.platform === 'win32') {
+      mainWindow.setIcon(appIcon);
+    }
   });
 
   // Handle external links - open in default browser

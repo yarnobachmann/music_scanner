@@ -251,11 +251,11 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
         doc.setTextColor(120, 120, 120);
         doc.text(`${trackCount} tracks`, pageWidth - 30, boxY + 11, { align: 'right' });
         
-        // Star for #1
+        // Top indicator for #1
         if (index === 0) {
-          doc.setFontSize(16);
+          doc.setFontSize(10);
           doc.setTextColor(255, 215, 0);
-          doc.text('★', pageWidth - 55, boxY + 11);
+          doc.text('TOP', pageWidth - 55, boxY + 11);
         }
       });
       
@@ -277,6 +277,8 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
     doc.text(`Total Albums: ${stats.totalAlbums.toLocaleString()}`, pageWidth - 30, yPosition + 25, { align: 'right' });
     
     yPosition += 60;
+
+
 
     if (comparison) {
       // Missing Tracks with epic styling
@@ -305,96 +307,80 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
         
         yPosition += 35;
 
-        const missingTracksData = comparison.missing_tracks.slice(0, 50).map(track => [
-          track.artist.length > 25 ? track.artist.substring(0, 25) + '...' : track.artist,
-          track.album.length > 30 ? track.album.substring(0, 30) + '...' : track.album,
-          track.track.length > 35 ? track.track.substring(0, 35) + '...' : track.track,
-          track.year || 'Unknown'
-        ]);
+        // Group missing tracks by artist
+        const tracksByArtist = comparison.missing_tracks.reduce((acc, track) => {
+          if (!acc[track.artist]) {
+            acc[track.artist] = [];
+          }
+          acc[track.artist].push(track);
+          return acc;
+        }, {} as Record<string, typeof comparison.missing_tracks>);
 
-        autoTable(doc, {
-          head: [['Artist', 'Album', 'Track', 'Year']],
-          body: missingTracksData,
-          startY: yPosition,
-          styles: { 
-            fontSize: 10,
-            textColor: [50, 50, 50],
-            fillColor: [248, 248, 248],
-            lineColor: [200, 200, 200],
-            lineWidth: 0.3,
-            cellPadding: 4
-          },
-          headStyles: { 
-            fillColor: [220, 38, 127],
-            textColor: [255, 255, 255],
-            fontSize: 11,
-            fontStyle: 'bold',
-            halign: 'center'
-          },
+        // Sort artists alphabetically
+        const sortedArtists = Object.keys(tracksByArtist).sort();
 
-          margin: { left: 20, right: 20 }
-        });
+        // Render each artist section
+        for (const artist of sortedArtists) {
+          const tracks = tracksByArtist[artist];
+          
+          // Check if we need a new page for the artist header
+          if (yPosition + 25 > pageHeight - 50) {
+            doc.addPage();
+            yPosition = 30;
+          }
 
-        yPosition = (doc as any).lastAutoTable.finalY + 15;
-      }
+          // Artist header
+          doc.setFillColor(250, 248, 255);
+          doc.roundedRect(20, yPosition - 2, pageWidth - 40, 20, 3, 3, 'F');
+          
+          doc.setFontSize(12);
+          doc.setTextColor(220, 38, 127);
+          doc.text(artist, 25, yPosition + 10);
+          
+          doc.setFontSize(9);
+          doc.setTextColor(120, 120, 120);
+          doc.text(`${tracks.length} missing track${tracks.length > 1 ? 's' : ''}`, pageWidth - 25, yPosition + 10, { align: 'right' });
+          
+          yPosition += 22;
 
-      // New Albums with epic styling
-      if (comparison.new_albums.length > 0) {
-        if (yPosition > 220) {
-          doc.addPage();
-          yPosition = 30;
+          // List tracks for this artist
+          tracks.forEach((track, index) => {
+            // Check if we need a new page for this track
+            if (yPosition + 12 > pageHeight - 30) {
+              doc.addPage();
+              yPosition = 30;
+            }
+            
+            // Track item
+            doc.setFillColor(index % 2 === 0 ? 252 : 248, 252, 255);
+            doc.roundedRect(25, yPosition - 2, pageWidth - 50, 12, 2, 2, 'F');
+            
+            // Track dot
+            doc.setFillColor(220, 38, 127);
+            doc.circle(30, yPosition + 4, 2, 'F');
+            
+            // Track info
+            doc.setFontSize(9);
+            doc.setTextColor(60, 60, 60);
+            const trackTitle = track.track.length > 40 ? track.track.substring(0, 37) + '...' : track.track;
+            doc.text(trackTitle, 35, yPosition + 6);
+            
+            // Album info (right side)
+            if (track.album && track.album !== 'Unknown') {
+              const albumText = track.album.length > 25 ? track.album.substring(0, 22) + '...' : track.album;
+              doc.setFontSize(8);
+              doc.setTextColor(120, 120, 120);
+              doc.text(`from: ${albumText}`, pageWidth - 25, yPosition + 6, { align: 'right' });
+            }
+            
+            yPosition += 12;
+          });
+          
+          yPosition += 8; // Reduced space between artists
         }
-
-        // Section header with refined style
-        doc.setFillColor(248, 255, 248);
-        doc.roundedRect(15, yPosition - 5, pageWidth - 30, 30, 5, 5, 'F');
-        
-        // Add accent border
-        doc.setDrawColor(34, 197, 94);
-        doc.setLineWidth(2);
-        doc.line(20, yPosition - 2, 60, yPosition - 2);
-        
-        doc.setFontSize(16);
-        doc.setTextColor(34, 197, 94);
-        doc.text('New Albums to Expand Your Library', 25, yPosition + 8);
-        
-        doc.setFontSize(10);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`${comparison.new_albums.length} fresh albums from your favorite artists`, 25, yPosition + 18);
-        
-        yPosition += 35;
-
-        const newAlbumsData = comparison.new_albums.slice(0, 30).map(album => [
-          album.artist.length > 25 ? album.artist.substring(0, 25) + '...' : album.artist,
-          album.album.length > 30 ? album.album.substring(0, 30) + '...' : album.album,
-          album.playcount.toLocaleString(),
-          album.year || 'Unknown'
-        ]);
-
-        autoTable(doc, {
-          head: [['Artist', 'Album', 'Plays', 'Year']],
-          body: newAlbumsData,
-          startY: yPosition,
-          styles: { 
-            fontSize: 10,
-            textColor: [50, 50, 50],
-            fillColor: [248, 255, 248],
-            lineColor: [200, 220, 200],
-            lineWidth: 0.3,
-            cellPadding: 4
-          },
-          headStyles: { 
-            fillColor: [34, 197, 94],
-            textColor: [255, 255, 255],
-            fontSize: 11,
-            fontStyle: 'bold',
-            halign: 'center'
-          },
-          margin: { left: 20, right: 20 }
-        });
-
-        yPosition = (doc as any).lastAutoTable.finalY + 15;
       }
+
+
 
       // New Songs with epic styling
       if (comparison.new_songs.length > 0) {
@@ -422,36 +408,74 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
         
         yPosition += 35;
 
-        const newSongsData = comparison.new_songs.slice(0, 30).map(song => [
-          song.artist.length > 25 ? song.artist.substring(0, 25) + '...' : song.artist,
-          song.track.length > 35 ? song.track.substring(0, 35) + '...' : song.track,
-          song.playcount.toLocaleString(),
-          song.year || 'Unknown'
-        ]);
+        // Group popular songs by artist
+        const songsByArtist = comparison.new_songs.reduce((acc, song) => {
+          if (!acc[song.artist]) {
+            acc[song.artist] = [];
+          }
+          acc[song.artist].push(song);
+          return acc;
+        }, {} as Record<string, typeof comparison.new_songs>);
 
-        autoTable(doc, {
-          head: [['Artist', 'Track', 'Plays', 'Year']],
-          body: newSongsData,
-          startY: yPosition,
-          styles: { 
-            fontSize: 10,
-            textColor: [50, 50, 50],
-            fillColor: [252, 248, 255],
-            lineColor: [220, 200, 240],
-            lineWidth: 0.3,
-            cellPadding: 4
-          },
-          headStyles: { 
-            fillColor: [139, 92, 246],
-            textColor: [255, 255, 255],
-            fontSize: 11,
-            fontStyle: 'bold',
-            halign: 'center'
-          },
-          margin: { left: 20, right: 20 }
-        });
-        
-        yPosition = (doc as any).lastAutoTable.finalY + 15;
+        // Sort artists alphabetically
+        const sortedSongArtists = Object.keys(songsByArtist).sort();
+
+        // Render each artist section
+        for (const artist of sortedSongArtists) {
+          const songs = songsByArtist[artist];
+          
+          // Check if we need a new page for the artist header
+          if (yPosition + 25 > pageHeight - 50) {
+            doc.addPage();
+            yPosition = 30;
+          }
+
+          // Artist header
+          doc.setFillColor(250, 245, 255);
+          doc.roundedRect(20, yPosition - 2, pageWidth - 40, 20, 3, 3, 'F');
+          
+          doc.setFontSize(12);
+          doc.setTextColor(139, 92, 246);
+          doc.text(artist, 25, yPosition + 10);
+          
+          doc.setFontSize(9);
+          doc.setTextColor(120, 120, 120);
+          doc.text(`${songs.length} popular song${songs.length > 1 ? 's' : ''}`, pageWidth - 25, yPosition + 10, { align: 'right' });
+          
+          yPosition += 22;
+
+          // List songs for this artist
+          songs.forEach((song, index) => {
+            // Check if we need a new page for this song
+            if (yPosition + 12 > pageHeight - 30) {
+              doc.addPage();
+              yPosition = 30;
+            }
+            
+            // Song item
+            doc.setFillColor(index % 2 === 0 ? 252 : 248, 248, 255);
+            doc.roundedRect(25, yPosition - 2, pageWidth - 50, 12, 2, 2, 'F');
+            
+            // Song dot
+            doc.setFillColor(139, 92, 246);
+            doc.circle(30, yPosition + 4, 2, 'F');
+            
+            // Song info
+            doc.setFontSize(9);
+            doc.setTextColor(60, 60, 60);
+            const songTitle = song.track.length > 40 ? song.track.substring(0, 37) + '...' : song.track;
+            doc.text(songTitle, 35, yPosition + 6);
+            
+            // Play count (right side)
+            doc.setFontSize(8);
+            doc.setTextColor(120, 120, 120);
+            doc.text(`${song.playcount.toLocaleString()} plays`, pageWidth - 25, yPosition + 6, { align: 'right' });
+            
+            yPosition += 12;
+          });
+          
+          yPosition += 8; // Reduced space between artists
+        }
       }
 
       // Epic Summary Page
@@ -470,7 +494,6 @@ const Dashboard: React.FC<DashboardProps> = ({ scanResult, onAnalyze, hasScanned
       // Summary boxes
       const summaryItems = [
         { icon: 'M', label: 'Missing Tracks Found', value: comparison.missing_tracks.length, color: [220, 38, 127] },
-        { icon: 'A', label: 'New Albums Discovered', value: comparison.new_albums.length, color: [34, 197, 94] },
         { icon: 'S', label: 'Hot Singles Identified', value: comparison.new_songs.length, color: [139, 92, 246] }
       ];
       

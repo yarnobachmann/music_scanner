@@ -616,7 +616,7 @@ sorted_recommendations = sorted(
     filtered_recommendations, 
     key=lambda x: (x['similarity'] * 0.7 + (x['listeners'] / 1000000) * 0.3), 
     reverse=True
-)[:15]  # Top 15 recommendations
+)[:25]  # Top 25 recommendations
 
 print(f"Final sorted recommendations: {len(sorted_recommendations)}", file=sys.stderr)
 
